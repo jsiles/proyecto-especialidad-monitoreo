@@ -1,0 +1,82 @@
+# ============================================
+# .gitignore - Plataforma de Monitoreo
+# ============================================
+
+# ==================== DEPENDENCIES ====================
+node_modules/
+.pnp
+.pnp.js
+
+# ==================== BUILD OUTPUT ====================
+dist/
+build/
+*.tsbuildinfo
+
+# ==================== ENVIRONMENT ====================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ==================== LOGS ====================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ==================== DATABASE ====================
+*.db
+*.sqlite
+*.sqlite3
+data/
+
+# ==================== IDE ====================
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ==================== OS ====================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# ==================== DOCKER ====================
+# Ignorar datos persistentes de Docker
+prometheus-data/
+grafana-data/
+
+# ==================== TESTING ====================
+coverage/
+.nyc_output/
+
+# ==================== TEMP ====================
+tmp/
+temp/
+*.tmp
+*.temp
+
+# ==================== CERTIFICATES ====================
+*.pem
+*.key
+*.crt
+certs/
+
+# ==================== REPORTS ====================
+reports/*.pdf
+
+# ==================== MISC ====================
+*.bak
+*.backup
+# ==================== DOCUMENTATION ====================
+docs/
+*.md
+!README.md
+*.docx

@@ -1,0 +1,55 @@
+# ============================================
+# .dockerignore - Plataforma de Monitoreo
+# Archivos excluidos del contexto de build
+# ============================================
+
+# ==================== GIT ====================
+.git
+.gitignore
+
+# ==================== DEPENDENCIES ====================
+**/node_modules
+
+# ==================== BUILD OUTPUT ====================
+**/dist
+**/build
+
+# ==================== DOCUMENTATION ====================
+docs/
+*.md
+!README.md
+
+# ==================== IDE ====================
+.idea/
+.vscode/
+
+# ==================== ENVIRONMENT ====================
+.env
+.env.*
+!.env.example
+
+# ==================== LOGS ====================
+**/logs
+*.log
+
+# ==================== DATABASE ====================
+**/*.db
+**/*.sqlite
+**/data
+
+# ==================== TESTING ====================
+**/coverage
+**/__tests__
+**/*.test.ts
+**/*.spec.ts
+
+# ==================== DOCKER ====================
+Dockerfile*
+docker-compose*
+.docker/
+
+# ==================== MISC ====================
+*.bak
+*.backup
+tmp/
+temp/
