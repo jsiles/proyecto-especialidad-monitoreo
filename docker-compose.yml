@@ -1,0 +1,154 @@
+# ============================================
+# Docker Compose - Production Configuration
+# Plataforma de Monitoreo en Tiempo Real
+# ============================================
+
+version: '3.8'
+
+services:
+  # ==================== FRONTEND ====================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: /api
+        VITE_WS_URL: /ws
+    container_name: monitoring-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+  # ==================== BACKEND ====================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: monitoring-backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DATABASE_PATH=/app/data/monitoring.db
+      - JWT_SECRET=${JWT_SECRET}
+      - JWT_EXPIRATION=1h
+      - PROMETHEUS_URL=http://prometheus:9090
+      - CORS_ORIGIN=http://localhost
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+    volumes:
+      - backend-data:/app/data
+      - backend-logs:/app/logs
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # ==================== PROMETHEUS ====================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: monitoring-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+  # ==================== GRAFANA ====================
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: monitoring-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+      - GF_SERVER_ROOT_URL=http://localhost/grafana/
+      - GF_SERVER_SERVE_FROM_SUB_PATH=true
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+  # ==================== MOCK EXPORTERS ====================
+  spi-exporter:
+    build:
+      context: ./mock-exporters/spi-exporter
+      dockerfile: Dockerfile
+    container_name: monitoring-spi-exporter
+    ports:
+      - "9101:9100"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+  atc-exporter:
+    build:
+      context: ./mock-exporters/atc-exporter
+      dockerfile: Dockerfile
+    container_name: monitoring-atc-exporter
+    ports:
+      - "9102:9100"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+  server-exporter:
+    build:
+      context: ./mock-exporters/server-exporter
+      dockerfile: Dockerfile
+    container_name: monitoring-server-exporter
+    ports:
+      - "9103:9100"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
+# ==================== VOLUMES ====================
+volumes:
+  backend-data:
+    driver: local
+  backend-logs:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+# ==================== NETWORKS ====================
+networks:
+  monitoring-network:
+    driver: bridge

@@ -1,0 +1,64 @@
+# ============================================
+# Prometheus Configuration
+# Plataforma de Monitoreo - Instituciones Financieras
+# ============================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'monitoring-platform'
+    environment: 'production'
+
+# ==================== ALERTING ====================
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# ==================== RULE FILES ====================
+rule_files:
+  - "alerts.yml"
+
+# ==================== SCRAPE CONFIGS ====================
+scrape_configs:
+  # ----- Prometheus Self-Monitoring -----
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+    metrics_path: /metrics
+    scheme: http
+
+  # ----- Backend API -----
+  - job_name: 'backend-api'
+    static_configs:
+      - targets: ['backend:3000']
+    metrics_path: /api/metrics
+    scrape_interval: 10s
+
+  # ----- SPI Exporter -----
+  - job_name: 'spi-exporter'
+    static_configs:
+      - targets: ['spi-exporter:9100']
+        labels:
+          system: 'spi'
+          criticality: 'high'
+          service_type: 'national_system'
+
+  # ----- ATC/Linkser Exporter -----
+  - job_name: 'atc-exporter'
+    static_configs:
+      - targets: ['atc-exporter:9100']
+        labels:
+          system: 'atc'
+          criticality: 'high'
+          service_type: 'national_system'
+
+  # ----- Server Exporter -----
+  - job_name: 'server-exporter'
+    static_configs:
+      - targets: ['server-exporter:9100']
+        labels:
+          system: 'internal'
+          criticality: 'medium'
+          service_type: 'server'

@@ -1,0 +1,132 @@
+# ============================================
+# Docker Compose - Development Configuration
+# Hot reload enabled
+# ============================================
+
+version: '3.8'
+
+services:
+  # ==================== FRONTEND (Dev Server) ====================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    container_name: monitoring-frontend-dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=http://localhost:3000/api
+      - VITE_WS_URL=ws://localhost:3000/ws
+    depends_on:
+      - backend
+    networks:
+      - monitoring-network
+
+  # ==================== BACKEND (Dev Server) ====================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: monitoring-backend-dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+      - backend-data:/app/data
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DATABASE_PATH=/app/data/monitoring.db
+      - JWT_SECRET=dev-secret-change-in-production
+      - JWT_EXPIRATION=24h
+      - PROMETHEUS_URL=http://prometheus:9090
+      - CORS_ORIGIN=http://localhost:5173
+      - LOG_LEVEL=debug
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring-network
+
+  # ==================== PROMETHEUS ====================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: monitoring-prometheus-dev
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-lifecycle'
+    networks:
+      - monitoring-network
+
+  # ==================== GRAFANA ====================
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: monitoring-grafana-dev
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring-network
+
+  # ==================== MOCK EXPORTERS ====================
+  spi-exporter:
+    build:
+      context: ./mock-exporters/spi-exporter
+      dockerfile: Dockerfile
+    container_name: monitoring-spi-exporter-dev
+    ports:
+      - "9101:9100"
+    networks:
+      - monitoring-network
+
+  atc-exporter:
+    build:
+      context: ./mock-exporters/atc-exporter
+      dockerfile: Dockerfile
+    container_name: monitoring-atc-exporter-dev
+    ports:
+      - "9102:9100"
+    networks:
+      - monitoring-network
+
+  server-exporter:
+    build:
+      context: ./mock-exporters/server-exporter
+      dockerfile: Dockerfile
+    container_name: monitoring-server-exporter-dev
+    ports:
+      - "9103:9100"
+    networks:
+      - monitoring-network
+
+# ==================== VOLUMES ====================
+volumes:
+  backend-data:
+  prometheus-data:
+  grafana-data:
+
+# ==================== NETWORKS ====================
+networks:
+  monitoring-network:
+    driver: bridge

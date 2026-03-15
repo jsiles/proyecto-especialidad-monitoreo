@@ -1,0 +1,105 @@
+# ============================================
+# Alerting Rules - ASFI Compliance
+# Detección de fallas < 30 minutos
+# ============================================
+
+groups:
+  # ==================== AVAILABILITY ALERTS ====================
+  - name: availability_alerts
+    interval: 30s
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+          compliance: asfi_362
+        annotations:
+          summary: "Servicio {{ $labels.job }} no disponible"
+          description: "El servicio {{ $labels.job }} en {{ $labels.instance }} está caído por más de 1 minuto."
+
+      - alert: HighLatency
+        expr: http_request_duration_seconds{quantile="0.99"} > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Alta latencia en {{ $labels.job }}"
+          description: "Latencia P99 > 2s por más de 5 minutos"
+
+  # ==================== RESOURCE ALERTS ====================
+  - name: resource_alerts
+    interval: 30s
+    rules:
+      - alert: HighCPUUsage
+        expr: cpu_usage_percent > 80
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "CPU alto en {{ $labels.instance }}"
+          description: "Uso de CPU > 80% por más de 5 minutos (actual: {{ $value }}%)"
+
+      - alert: CriticalCPUUsage
+        expr: cpu_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          compliance: asfi_362
+        annotations:
+          summary: "CPU crítico en {{ $labels.instance }}"
+          description: "Uso de CPU > 95% por más de 2 minutos (actual: {{ $value }}%)"
+
+      - alert: HighMemoryUsage
+        expr: memory_usage_percent > 85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Memoria alta en {{ $labels.instance }}"
+          description: "Uso de memoria > 85% (actual: {{ $value }}%)"
+
+      - alert: CriticalMemoryUsage
+        expr: memory_usage_percent > 95
+        for: 2m
+        labels:
+          severity: critical
+          compliance: asfi_362
+        annotations:
+          summary: "Memoria crítica en {{ $labels.instance }}"
+          description: "Uso de memoria > 95% (actual: {{ $value }}%)"
+
+      - alert: HighDiskUsage
+        expr: disk_usage_percent > 80
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Disco alto en {{ $labels.instance }}"
+          description: "Uso de disco > 80% (actual: {{ $value }}%)"
+
+  # ==================== NATIONAL SYSTEMS ALERTS ====================
+  - name: national_systems_alerts
+    interval: 15s
+    rules:
+      - alert: SPIUnavailable
+        expr: spi_service_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          compliance: asfi_362
+          system: spi
+        annotations:
+          summary: "Sistema SPI no disponible"
+          description: "El Sistema de Pagos Interbancarios no responde"
+
+      - alert: ATCUnavailable
+        expr: atc_service_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          compliance: asfi_362
+          system: atc
+        annotations:
+          summary: "Sistema ATC/Linkser no disponible"
+          description: "El sistema ATC no responde"
