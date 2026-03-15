@@ -1,18 +1,26 @@
 import { Outlet, Link, useLocation, useNavigate } from "react-router";
-import { Server, Bell, FileText, LogOut, User, Download, Menu as MenuIcon } from "lucide-react";
+import { Server, Bell, FileText, LogOut, User, Download, Menu as MenuIcon, Database } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "../../contexts/AuthContext";
 
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { logout, user } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
   };
 
   const navItems = [
     { path: "/", label: "Dashboard", icon: Server },
+    { path: "/servers", label: "Servers", icon: Database },
     { path: "/alerts", label: "Alerts", icon: Bell },
     { path: "/reports", label: "Reports", icon: FileText },
   ];

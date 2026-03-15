@@ -3,7 +3,9 @@ import { Login } from "./pages/Login";
 import { Dashboard } from "./pages/Dashboard";
 import { AlertsManagement } from "./pages/AlertsManagement";
 import { Reports } from "./pages/Reports";
+import { ServersPage } from "./pages/ServersPage";
 import { Layout } from "./components/Layout";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 export const router = createBrowserRouter([
   {
@@ -12,11 +14,18 @@ export const router = createBrowserRouter([
   },
   {
     path: "/",
-    Component: Layout,
+    Component: ProtectedRoute,
     children: [
-      { index: true, Component: Dashboard },
-      { path: "alerts", Component: AlertsManagement },
-      { path: "reports", Component: Reports },
+      {
+        path: "/",
+        Component: Layout,
+        children: [
+          { index: true, Component: Dashboard },
+          { path: "servers", Component: ServersPage },
+          { path: "alerts", Component: AlertsManagement },
+          { path: "reports", Component: Reports },
+        ],
+      },
     ],
   },
 ]);

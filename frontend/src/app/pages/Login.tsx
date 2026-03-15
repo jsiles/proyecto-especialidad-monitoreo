@@ -1,20 +1,44 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
-import { Server, User, Lock } from "lucide-react";
+import { Server, User, Lock, AlertCircle } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Input } from "../components/ui/input";
 import { Checkbox } from "../components/ui/checkbox";
+import { useAuth } from "../../contexts/AuthContext";
+import { getErrorMessage } from "../../services/api";
 
 export function Login() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Mock login - navigate to dashboard
-    navigate("/");
+    
+    // Validación básica
+    if (!username || !password) {
+      setError("Please enter username and password");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+
+    try {
+      await login({ username, password });
+      // Login exitoso, AuthContext maneja el estado del usuario
+      navigate("/");
+    } catch (err) {
+      const message = getErrorMessage(err);
+      setError(message);
+      console.error("Login error:", err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -53,6 +77,15 @@ export function Login() {
               {/* Form */}
               <form onSubmit={handleLogin} className="space-y-6">
                 <div className="bg-[#1e293b]/60 backdrop-blur-sm rounded-lg p-8 space-y-6">
+                  
+                  {/* Error Message */}
+                  {error && (
+                    <div className="bg-red-500/20 border border-red-500/50 text-red-200 px-4 py-3 rounded-md flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5" />
+                      <span className="text-sm">{error}</span>
+                    </div>
+                  )}
+
                   {/* Username Input */}
                   <div className="space-y-2">
                     <div className="relative">
@@ -101,9 +134,10 @@ export function Login() {
                   {/* Login Button */}
                   <Button
                     type="submit"
-                    className="w-full bg-[#3b82f6] hover:bg-[#2563eb] text-white py-6 rounded-md"
+                    disabled={loading}
+                    className="w-full bg-[#3b82f6] hover:bg-[#2563eb] text-white py-6 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Login
+                    {loading ? "Logging in..." : "Login"}
                   </Button>
 
                   {/* Forgot Password Link */}

@@ -14,34 +14,74 @@ Sistema Full Stack de monitoreo bancario para instituciones financieras bolivian
 - ✅ Detección de fallas en menos de 30 minutos
 - ✅ Generación automática de reportes ASFI (diario y semanal)
 - ✅ Dashboard en tiempo real con métricas de CPU, RAM y disponibilidad
-- ✅ Sistema de alertas por email
+- ✅ Sistema de alertas con acknowledge/resolve
 
 ## 🛠️ Stack Tecnológico
 
-| Componente | Tecnología |
-|------------|------------|
-| Frontend | React 18 + TypeScript + Material-UI |
-| Backend | Node.js + Express + TypeScript |
-| Base de Datos | SQLite |
-| Monitoreo | Prometheus |
-| Visualización | Grafana |
-| Contenedores | Docker + Docker Compose |
-| Autenticación | JWT + bcrypt |
+| Componente | Tecnología | Versión |
+|------------|------------|---------|
+| **Frontend** | React + TypeScript + Vite | 18.3.1 |
+| **Styling** | Tailwind CSS + shadcn/ui | 4.x |
+| **Backend** | Node.js + Express + TypeScript | 20.x LTS |
+| **Base de Datos** | SQLite | 3.x |
+| **Monitoreo** | Prometheus | 2.x |
+| **Visualización** | Grafana | 10.x |
+| **Contenedores** | Docker + Docker Compose | Latest |
+| **Autenticación** | JWT + bcrypt | - |
+
+## 📊 Estado del Proyecto
+
+```
+✅ Fase 1: Setup e Infraestructura         (100%)
+✅ Fase 2: Backend Core                    (100%)
+✅ Fase 3: API REST y Base de Datos        (100%)
+✅ Fase 4: Frontend Base                   (100%)
+✅ Fase 5: Integración Frontend-Backend    (100%)
+⏳ Fase 6: Monitoreo Prometheus/Grafana    (0%)
+⏳ Fase 7: Sistema de Alertas Avanzado     (0%)
+⏳ Fase 8: Reportes ASFI                   (0%)
+────────────────────────────────────────────────
+PROGRESO TOTAL: 60%
+```
 
 ## 🚀 Inicio Rápido
 
 ### Prerrequisitos
 
-- Docker y Docker Compose instalados
-- Node.js 20+ (para desarrollo local)
+- Node.js 20+ instalado
+- Puerto 3000 (backend) y 5173 (frontend) disponibles
 
-### Ejecución con Docker
+### Ejecución en Desarrollo
 
 ```bash
-# Clonar el repositorio
+# 1. Clonar el repositorio
 git clone <repository-url>
 cd proyecto-especialidad-monitoreo
 
+# 2. Backend (Terminal 1)
+cd backend
+npm install
+npm run dev
+# ✅ Backend: http://localhost:3000
+# ✅ Swagger: http://localhost:3000/api-docs
+
+# 3. Frontend (Terminal 2)
+cd frontend
+npm install
+npm run dev
+# ✅ Frontend: http://localhost:5173
+```
+
+### Credenciales de Acceso
+
+```
+Username: admin
+Password: admin123
+```
+
+### Ejecución con Docker (Pendiente - Fase 6+)
+
+```bash
 # Copiar variables de entorno
 cp .env.example .env
 
@@ -72,27 +112,59 @@ proyecto-especialidad-monitoreo/
 └── Dockerfile
 ```
 
-## 📊 Funcionalidades
+## 📊 Funcionalidades Implementadas
 
-### Dashboard
-- Estado general de servidores (semáforo visual)
-- Métricas en tiempo real (CPU, RAM, disponibilidad)
-- Gráficos históricos (últimos 7 días)
+### ✅ Dashboard (Tiempo Real)
+- ✅ Estado general de servidores (online/offline)
+- ✅ Métricas en tiempo real (CPU, RAM, Disk, Availability)
+- ✅ Gráficos de área con 3 métricas simultáneas
+- ✅ Auto-refresh cada 10 segundos
+- ✅ Panel de alertas activas
+- ✅ Lista de servidores con estados visuales
 
-### Alertas
-- Configuración de umbrales
-- Notificaciones por email
-- Historial de alertas
+### ✅ Gestión de Servidores
+- ✅ CRUD completo (Create, Read, Update, Delete)
+- ✅ Formulario modal de creación/edición
+- ✅ Validación de datos
+- ✅ Estados visuales (online/offline/degraded)
+- ✅ Filtrado por tipo y ambiente
+- ✅ Confirmación de eliminación
 
-### Reportes ASFI
-- Reporte diario de disponibilidad
-- Reporte semanal de incidentes
-- Exportación en PDF
+### ✅ Sistema de Alertas
+- ✅ 3 vistas: Active Alerts, All Alerts, Thresholds
+- ✅ Configuración de umbrales personalizados
+- ✅ Acknowledge de alertas
+- ✅ Resolución de alertas
+- ✅ Indicadores visuales por severidad (critical/warning/info)
+- ✅ Historial completo de alertas
+- ✅ CRUD de umbrales (Create, Delete)
+- ✅ Auto-refresh cada 10 segundos
 
-### Sistemas Simulados
-- **SPI**: Sistema de Pagos Interbancarios
-- **ATC**: Autorización de Tarjetas
-- **Linkser**: Pagos Electrónicos
+### ✅ Reportes ASFI
+- ✅ Generación rápida de reporte ASFI
+- ✅ Reportes personalizados (daily/weekly/monthly)
+- ✅ Selección de rango de fechas
+- ✅ Filtrado por servidores específicos
+- ✅ Descarga de PDFs
+- ✅ Historial de reportes generados
+- ✅ Visualización de metadatos
+
+### ✅ Autenticación y Seguridad
+- ✅ Login con JWT
+- ✅ Auto-logout en token expirado
+- ✅ Protected routes
+- ✅ Roles y permisos (Admin/Operator/Auditor)
+- ✅ Contraseñas hasheadas (bcrypt)
+- ✅ Logs de auditoría
+
+### ⏳ Próximas Funcionalidades (Fases 6-8)
+- ⏳ Integración con Prometheus
+- ⏳ Dashboards Grafana embebidos
+- ⏳ Notificaciones por email
+- ⏳ WebSocket para notificaciones en tiempo real
+- ⏳ Exporters de métricas (SPI, ATC, Linkser)
+- ⏳ Reportes PDF con gráficos
+- ⏳ Cálculo de MTTR y MTBF
 
 ## 🔐 Seguridad
 
@@ -148,7 +220,53 @@ proyecto-especialidad-monitoreo/
 - POST   /api/reports/generate/asfi (admin/operator)
 - DELETE /api/reports/:id (admin only)
 
-## 📝 Licencia
+## � Documentación Adicional
+
+- 📖 [**Guía Rápida de Testing**](GUIA_RAPIDA_TESTING.md) - Instrucciones paso a paso para probar la aplicación
+- ✅ [**Fase 5 Completada**](FASE_5_COMPLETADA.md) - Resumen detallado de la integración frontend-backend
+- 📋 [**Instrucciones de Desarrollo**](.github/copilot-instructions.md) - Guía completa del proyecto y estándares
+
+## 🎯 Guía de Testing Rápida
+
+### 1. Iniciar Aplicación
+```bash
+# Terminal 1: Backend
+cd backend && npm run dev
+
+# Terminal 2: Frontend  
+cd frontend && npm run dev
+```
+
+### 2. Acceder
+- URL: http://localhost:5173/login
+- User: `admin`
+- Pass: `admin123`
+
+### 3. Probar Flujo Completo
+1. ✅ Login → Dashboard
+2. ✅ Servers → Crear/Editar/Eliminar servidor
+3. ✅ Alerts → Ver alertas, crear threshold, acknowledge/resolve
+4. ✅ Reports → Generar reporte ASFI, descargar PDF
+5. ✅ Logout
+
+## 🔧 Comandos Útiles
+
+```bash
+# Backend
+npm run dev          # Desarrollo con hot-reload
+npm run build        # Compilar TypeScript
+npm run start        # Producción
+npm run test         # Ejecutar tests
+npm run lint         # Linter
+
+# Frontend
+npm run dev          # Desarrollo con Vite
+npm run build        # Build para producción
+npm run preview      # Preview del build
+npm run lint         # Linter
+```
+
+## �📝 Licencia
 
 Proyecto académico - Universidad Católica Boliviana "San Pablo"
 
