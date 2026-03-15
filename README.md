@@ -104,49 +104,49 @@ proyecto-especialidad-monitoreo/
 
 ## Endpoints implementados
 
-AUTH
-POST   /api/auth/login
-POST   /api/auth/register
-GET    /api/auth/verify
-POST   /api/auth/logout
-POST   /api/auth/change-password
-GET    /api/auth/me
+- AUTH
+- POST   /api/auth/login
+- POST   /api/auth/register
+- GET    /api/auth/verify
+- POST   /api/auth/logout
+- POST   /api/auth/change-password
+- GET    /api/auth/me
 
-SERVERS
-GET    /api/servers
-GET    /api/servers/:id
-POST   /api/servers (admin only)
-PUT    /api/servers/:id (admin only)
-DELETE /api/servers/:id (admin only)
-GET    /api/servers/:id/status
-GET    /api/servers/:id/metrics
+- SERVERS
+- GET    /api/servers
+- GET    /api/servers/:id
+- POST   /api/servers (admin only)
+- PUT    /api/servers/:id (admin only)
+- DELETE /api/servers/:id (admin only)
+- GET    /api/servers/:id/status
+- GET    /api/servers/:id/metrics
 
-ALERTS
-GET    /api/alerts
-GET    /api/alerts/active
-GET    /api/alerts/:id
-PUT    /api/alerts/:id/acknowledge
-PUT    /api/alerts/:id/resolve
-GET    /api/alerts/thresholds
-POST   /api/alerts/thresholds (admin only)
-PUT    /api/alerts/thresholds/:id (admin only)
-DELETE /api/alerts/thresholds/:id (admin only)
+- ALERTS
+- GET    /api/alerts
+- GET    /api/alerts/active
+- GET    /api/alerts/:id
+- PUT    /api/alerts/:id/acknowledge
+- PUT    /api/alerts/:id/resolve
+- GET    /api/alerts/thresholds
+- POST   /api/alerts/thresholds (admin only)
+- PUT    /api/alerts/thresholds/:id (admin only)
+- DELETE /api/alerts/thresholds/:id (admin only)
 
-METRICS
-GET    /api/metrics
-GET    /api/metrics/summary
-GET    /api/metrics/history
-GET    /api/metrics/history/:serverId
-GET    /api/metrics/prometheus
+- METRICS
+- GET    /api/metrics
+- GET    /api/metrics/summary
+- GET    /api/metrics/history
+- GET    /api/metrics/history/:serverId
+- GET    /api/metrics/prometheus
 
-REPORTS
-GET    /api/reports
-GET    /api/reports/statistics
-GET    /api/reports/:id
-GET    /api/reports/:id/download
-POST   /api/reports/generate (admin/operator)
-POST   /api/reports/generate/asfi (admin/operator)
-DELETE /api/reports/:id (admin only)
+- REPORTS
+- GET    /api/reports
+- GET    /api/reports/statistics
+- GET    /api/reports/:id
+- GET    /api/reports/:id/download
+- POST   /api/reports/generate (admin/operator)
+- POST   /api/reports/generate/asfi (admin/operator)
+- DELETE /api/reports/:id (admin only)
 
 ## 📝 Licencia
 
