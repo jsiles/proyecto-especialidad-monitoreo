@@ -8,11 +8,13 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import compression from 'compression';
+import swaggerUi from 'swagger-ui-express';
 
 import { errorHandler } from './middlewares/errorHandler';
 import { requestLogger } from './middlewares/requestLogger';
 import routes from './routes';
 import { logger } from './utils/logger';
+import { swaggerSpec } from './config/swagger';
 
 // Create Express application
 const app: Application = express();
@@ -63,6 +65,18 @@ app.get('/api/health', (_req: Request, res: Response) => {
       environment: process.env.NODE_ENV || 'development',
     },
   });
+});
+
+// ==================== SWAGGER API DOCUMENTATION ====================
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Monitoring Platform API Docs',
+}));
+
+// Swagger JSON endpoint
+app.get('/api-docs.json', (_req: Request, res: Response) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(swaggerSpec);
 });
 
 // ==================== API ROUTES ====================

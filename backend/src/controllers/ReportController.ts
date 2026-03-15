@@ -4,8 +4,11 @@
  */
 
 import { Request, Response, NextFunction } from 'express';
+import path from 'path';
+import { reportService } from '../services/ReportService';
 import { BadRequestError } from '../middlewares/errorHandler';
 import { auditLog } from '../utils/logger';
+import { ReportType, ReportGenerationOptions } from '../models/Report';
 
 export class ReportController {
   /**
@@ -14,17 +17,24 @@ export class ReportController {
    */
   public getAll = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { page, limit } = req.query;
+      const { page, limit, type, status } = req.query;
 
-      // TODO: Implement ReportService.getAll()
+      const options = {
+        type: type as ReportType | undefined,
+        status: status as 'pending' | 'processing' | 'completed' | 'failed' | undefined,
+        limit: limit ? parseInt(limit as string) : 20,
+        offset: page ? (parseInt(page as string) - 1) * (parseInt(limit as string) || 20) : 0,
+      };
+
+      const result = reportService.getAll(options);
 
       res.json({
         success: true,
         data: {
-          reports: [],
-          total: 0,
-          page: Number(page) || 1,
-          limit: Number(limit) || 20,
+          reports: result.reports,
+          total: result.total,
+          page: parseInt(page as string) || 1,
+          limit: options.limit,
         },
         meta: { timestamp: new Date().toISOString() },
       });
@@ -40,14 +50,11 @@ export class ReportController {
   public getById = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
-
-      // TODO: Implement ReportService.getById()
+      const report = reportService.getById(id);
 
       res.json({
         success: true,
-        data: {
-          report: { id }, // Placeholder
-        },
+        data: { report },
         meta: { timestamp: new Date().toISOString() },
       });
     } catch (error) {
@@ -61,22 +68,42 @@ export class ReportController {
    */
   public generate = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      const { type, from, to } = req.body;
+      const { type, from, to, include_charts, include_incidents, servers } = req.body;
 
       if (!type) {
         throw new BadRequestError('Report type is required');
       }
 
-      // TODO: Implement ReportService.generate()
+      if (!from || !to) {
+        throw new BadRequestError('Date range (from, to) is required');
+      }
 
-      auditLog('REPORT_GENERATE', req.user?.userId || null, { type, from, to });
+      const validTypes: ReportType[] = ['daily', 'weekly', 'monthly', 'asfi', 'custom'];
+      if (!validTypes.includes(type)) {
+        throw new BadRequestError(`Invalid report type. Must be one of: ${validTypes.join(', ')}`);
+      }
+
+      const options: ReportGenerationOptions = {
+        type,
+        from_date: from,
+        to_date: to,
+        include_charts: include_charts || false,
+        include_incidents: include_incidents || true,
+        servers: servers || undefined,
+      };
+
+      const report = await reportService.generate(options, req.user?.userId);
+
+      auditLog('REPORT_GENERATED', req.user?.userId || null, { 
+        reportId: report.id, 
+        type, 
+        from, 
+        to 
+      });
 
       res.status(201).json({
         success: true,
-        data: {
-          message: 'Report generation started - Implementation pending',
-          reportId: null,
-        },
+        data: { report },
         meta: { timestamp: new Date().toISOString() },
       });
     } catch (error) {
@@ -96,16 +123,26 @@ export class ReportController {
         throw new BadRequestError('Date range (from, to) is required for ASFI report');
       }
 
-      // TODO: Implement ReportService.generateAsfi()
+      const options: ReportGenerationOptions = {
+        type: 'asfi',
+        from_date: from,
+        to_date: to,
+        include_charts: true,
+        include_incidents: true,
+      };
 
-      auditLog('REPORT_GENERATE_ASFI', req.user?.userId || null, { from, to });
+      const report = await reportService.generate(options, req.user?.userId);
+
+      auditLog('REPORT_GENERATED', req.user?.userId || null, { 
+        reportId: report.id, 
+        type: 'asfi',
+        from, 
+        to 
+      });
 
       res.status(201).json({
         success: true,
-        data: {
-          message: 'ASFI report generation started - Implementation pending',
-          reportId: null,
-        },
+        data: { report },
         meta: { timestamp: new Date().toISOString() },
       });
     } catch (error) {
@@ -120,18 +157,22 @@ export class ReportController {
   public download = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
+      const filePath = reportService.getFilePath(id);
+      const report = reportService.getById(id);
 
-      // TODO: Implement ReportService.download()
+      auditLog('REPORT_DOWNLOADED', req.user?.userId || null, { reportId: id });
 
-      auditLog('REPORT_DOWNLOAD', req.user?.userId || null, { reportId: id });
+      // Set headers for PDF download
+      const fileName = path.basename(filePath);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      
+      if (report.file_size) {
+        res.setHeader('Content-Length', report.file_size);
+      }
 
-      res.json({
-        success: true,
-        data: {
-          message: 'Report download - Implementation pending',
-        },
-        meta: { timestamp: new Date().toISOString() },
-      });
+      // Stream the file
+      res.sendFile(filePath, { root: '.' });
     } catch (error) {
       next(error);
     }
@@ -144,16 +185,32 @@ export class ReportController {
   public delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const { id } = req.params;
+      
+      reportService.delete(id, req.user?.userId);
 
-      // TODO: Implement ReportService.delete()
-
-      auditLog('REPORT_DELETE', req.user?.userId || null, { reportId: id });
+      auditLog('REPORT_DELETED', req.user?.userId || null, { reportId: id });
 
       res.json({
         success: true,
-        data: {
-          message: 'Report deleted - Implementation pending',
-        },
+        data: { message: 'Report deleted successfully' },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Get report statistics
+   * GET /api/reports/statistics
+   */
+  public getStatistics = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const stats = reportService.getStatistics();
+
+      res.json({
+        success: true,
+        data: stats,
         meta: { timestamp: new Date().toISOString() },
       });
     } catch (error) {

@@ -198,6 +198,23 @@ const runMigrations = async (): Promise<void> => {
           ('role-auditor', 'AUDITOR', 'Read-only access for auditing');
       `,
     },
+    {
+      name: '003_reports_update',
+      sql: `
+        -- Add new columns to reports table
+        ALTER TABLE reports ADD COLUMN status TEXT DEFAULT 'pending';
+        ALTER TABLE reports ADD COLUMN period_start DATETIME;
+        ALTER TABLE reports ADD COLUMN period_end DATETIME;
+        ALTER TABLE reports ADD COLUMN file_size INTEGER;
+        ALTER TABLE reports ADD COLUMN error_message TEXT;
+        ALTER TABLE reports ADD COLUMN completed_at DATETIME;
+        
+        -- Create index for report queries
+        CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
+        CREATE INDEX IF NOT EXISTS idx_reports_type ON reports(type);
+        CREATE INDEX IF NOT EXISTS idx_reports_created ON reports(created_at);
+      `,
+    },
   ];
 
   for (const migration of migrations) {

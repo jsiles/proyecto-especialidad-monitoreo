@@ -6,13 +6,20 @@
 export interface Report {
   id: string;
   type: ReportType;
-  period: string | null;
+  status: ReportStatus;
+  period_start: string;
+  period_end: string;
   file_path: string | null;
+  file_size: number | null;
   generated_by: string | null;
+  generated_by_username?: string | null;
+  error_message: string | null;
   created_at: string;
+  completed_at: string | null;
 }
 
 export type ReportType = 'daily' | 'weekly' | 'monthly' | 'asfi' | 'custom';
+export type ReportStatus = 'pending' | 'processing' | 'completed' | 'failed';
 
 export interface ReportWithUser extends Report {
   generated_by_username: string | null;
@@ -21,7 +28,8 @@ export interface ReportWithUser extends Report {
 // Type for creating a new report
 export interface CreateReportInput {
   type: ReportType;
-  period?: string;
+  period_start: string;
+  period_end: string;
   generated_by?: string;
 }
 
