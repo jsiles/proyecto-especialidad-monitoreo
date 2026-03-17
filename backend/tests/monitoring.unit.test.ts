@@ -56,6 +56,8 @@ function prometheusRange(values: [number, string][]) {
 
 describe('MonitoringService (unit, axios mocked)', () => {
   let createdServerId: string;
+  let spiServerId: string;
+  let atcServerId: string;
 
   // Create a real server directly in the test DB so service can look it up
   beforeAll(() => {
@@ -67,6 +69,20 @@ describe('MonitoringService (unit, axios mocked)', () => {
     });
 
     createdServerId = created.id;
+
+    spiServerId = serverRepository.create({
+      name: `spi-unit-${Date.now().toString(36)}`,
+      ip_address: '10.0.0.100',
+      type: 'spi',
+      environment: 'testing',
+    }).id;
+
+    atcServerId = serverRepository.create({
+      name: `atc-unit-${Date.now().toString(36)}`,
+      ip_address: '10.0.0.101',
+      type: 'atc',
+      environment: 'testing',
+    }).id;
   });
 
   afterEach(() => {
@@ -147,12 +163,12 @@ describe('MonitoringService (unit, axios mocked)', () => {
     expect(updateStatusSpy).toHaveBeenCalledWith(createdServerId, 'degraded');
   });
 
-  it('getServerMetrics: marks server as unknown when Prometheus throws', async () => {
+  it('getServerMetrics: marks server as offline when Prometheus returns no signal', async () => {
     mockedAxios.get.mockRejectedValue(new Error('timeout'));
 
     const metrics = await monitoringService.getServerMetrics(createdServerId);
 
-    expect(metrics.status).toBe('unknown');
+    expect(metrics.status).toBe('offline');
     expect(metrics.metrics.cpu).toBe(0);
   });
 
@@ -165,12 +181,51 @@ describe('MonitoringService (unit, axios mocked)', () => {
     expect(metrics.status).toBe('degraded');
   });
 
-  it('getServerMetrics: status is unknown when all metrics are zero (empty result)', async () => {
+  it('getServerMetrics: status is offline when all per-server metrics are missing', async () => {
     mockedAxios.get.mockResolvedValue(prometheusEmpty());
 
     const metrics = await monitoringService.getServerMetrics(createdServerId);
 
-    expect(metrics.status).toBe('unknown');
+    expect(metrics.status).toBe('offline');
+  });
+
+  it('getServerMetrics: includes server uptime when Prometheus exposes it', async () => {
+    mockedAxios.get
+      .mockResolvedValueOnce(prometheusInstant('42.0'))
+      .mockResolvedValueOnce(prometheusInstant('43.0'))
+      .mockResolvedValueOnce(prometheusInstant('44.0'))
+      .mockResolvedValueOnce(prometheusInstant('3600'));
+
+    const metrics = await monitoringService.getServerMetrics(createdServerId);
+
+    expect(metrics.metrics.uptime).toBe(3600);
+    expect(metrics.status).toBe('online');
+  });
+
+  it('getServerMetrics: marks spi gateway online using spi_service_up', async () => {
+    mockedAxios.get
+      .mockResolvedValueOnce(prometheusInstant('1'))
+      .mockResolvedValueOnce(prometheusInstant('12.5'))
+      .mockResolvedValueOnce(prometheusInstant('0.2'));
+
+    const metrics = await monitoringService.getServerMetrics(spiServerId);
+
+    expect(metrics.status).toBe('online');
+    expect(metrics.metrics.network_in).toBe(12.5);
+    expect(metrics.metrics.network_out).toBe(0.2);
+  });
+
+  it('getServerMetrics: marks atc gateway offline using atc_service_up', async () => {
+    mockedAxios.get
+      .mockResolvedValueOnce(prometheusInstant('0'))
+      .mockResolvedValueOnce(prometheusInstant('9.1'))
+      .mockResolvedValueOnce(prometheusInstant('0.97'));
+
+    const metrics = await monitoringService.getServerMetrics(atcServerId);
+
+    expect(metrics.status).toBe('offline');
+    expect(metrics.metrics.network_in).toBe(9.1);
+    expect(metrics.metrics.network_out).toBe(0.97);
   });
 
   it('getServerMetrics: creates threshold alert when value exceeds threshold and no duplicate exists', async () => {

@@ -27,7 +27,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "count(up == 1)",
+          "expr": "(((count(max by (server) (server_uptime_seconds))) or vector(0)) + ((max(spi_service_up)) or vector(0)) + ((max(atc_service_up)) or vector(0)))",
           "refId": "A"
         }
       ],
@@ -52,7 +52,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "count(up == 0)",
+          "expr": "(7 - (((count(max by (server) (server_uptime_seconds))) or vector(0)) + ((max(spi_service_up)) or vector(0)) + ((max(atc_service_up)) or vector(0)))) or vector(0)",
           "refId": "A"
         }
       ],
@@ -88,7 +88,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "avg(cpu_usage_percent)",
+          "expr": "(avg(cpu_usage_percent)) or vector(0)",
           "refId": "A"
         }
       ],
@@ -126,7 +126,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "avg(memory_usage_percent)",
+          "expr": "(avg(memory_usage_percent)) or vector(0)",
           "refId": "A"
         }
       ],
@@ -230,8 +230,8 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "up",
-          "legendFormat": "{{job}}",
+          "expr": "label_replace(max by (server) (server_uptime_seconds > bool 0), \"target\", \"$1\", \"server\", \"(.*)\") or label_replace(spi_service_up, \"target\", \"spi-gateway\", \"__name__\", \".*\") or label_replace(atc_service_up, \"target\", \"atc-gateway\", \"__name__\", \".*\")",
+          "legendFormat": "{{target}}",
           "refId": "A"
         }
       ],

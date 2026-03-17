@@ -37,9 +37,27 @@ const servers = [
     ip_address: '10.0.0.10',
     type: 'application',
   },
+  {
+    id: 'srv-spi',
+    name: 'spi-gateway',
+    status: 'online',
+    ip_address: '10.0.0.100',
+    type: 'spi',
+  },
+  {
+    id: 'srv-atc',
+    name: 'atc-gateway',
+    status: 'online',
+    ip_address: '10.0.0.101',
+    type: 'atc',
+  },
 ];
 
-const fetchMetrics = vi.fn();
+const { fetchMetrics, getSPIMetrics, getATCMetrics } = vi.hoisted(() => ({
+  fetchMetrics: vi.fn(),
+  getSPIMetrics: vi.fn(),
+  getATCMetrics: vi.fn(),
+}));
 
 // Mock date-fns to avoid heavy module loading
 vi.mock('date-fns', () => ({
@@ -91,7 +109,28 @@ vi.mock('../../hooks/useServers', () => ({
   }),
 }));
 
+vi.mock('../../services/metricsService', () => ({
+  default: {
+    getSPIMetrics,
+    getATCMetrics,
+  },
+}));
+
 describe('Dashboard page', () => {
+  beforeEach(() => {
+    getSPIMetrics.mockResolvedValue({
+      serviceUp: 1,
+      transactionsPerSecond: 12.34,
+      failedTransactionsPerSecond: 0.12,
+      p95Duration: 0.98,
+    });
+    getATCMetrics.mockResolvedValue({
+      serviceUp: 1,
+      transactionsPerSecond: 21.43,
+      authorizationRate: 0.97,
+    });
+  });
+
   it('renders summary cards from hook data', () => {
     render(<Dashboard />);
 
@@ -114,6 +153,27 @@ describe('Dashboard page', () => {
     render(<Dashboard />);
 
     expect(screen.getByText('Grafana Dashboard')).toBeInTheDocument();
-    expect(screen.getByTitle('Grafana Monitoring Dashboard')).toBeInTheDocument();
+    expect(screen.getByTitle('Grafana Monitoring Dashboard')).toHaveAttribute('src', expect.stringContaining('/grafana/d/main-monitoring'));
+    expect(screen.getByRole('link', { name: 'Open Grafana' })).toHaveAttribute('href', '/grafana/');
+  });
+
+  it('renders SPI and ATC sections', async () => {
+    render(<Dashboard />);
+
+    expect(await screen.findByText('SPI Metrics')).toBeInTheDocument();
+    expect(await screen.findByText('ATC Metrics')).toBeInTheDocument();
+    expect(await screen.findAllByText('UP')).toHaveLength(2);
+    expect(await screen.findByText('12.34')).toBeInTheDocument();
+    expect(await screen.findByText('21.43')).toBeInTheDocument();
+  });
+
+  it('renders SPI and ATC gateway stats in monitored servers', async () => {
+    render(<Dashboard />);
+
+    expect(await screen.findByText('spi-gateway')).toBeInTheDocument();
+    expect(await screen.findByText('atc-gateway')).toBeInTheDocument();
+    expect(await screen.findAllByText('TPS')).toHaveLength(3);
+    expect(await screen.findByText('Failed/s')).toBeInTheDocument();
+    expect(await screen.findByText('Auth')).toBeInTheDocument();
   });
 });

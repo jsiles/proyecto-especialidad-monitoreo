@@ -78,66 +78,6 @@ router.get('/active', alertController.getActive);
 
 /**
  * @swagger
- * /api/alerts/{id}:
- *   get:
- *     summary: Get alert by ID
- *     tags: [Alerts]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Alert details
- */
-router.get('/:id', alertController.getById);
-
-/**
- * @swagger
- * /api/alerts/{id}/acknowledge:
- *   put:
- *     summary: Acknowledge alert
- *     tags: [Alerts]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Alert acknowledged
- */
-router.put('/:id/acknowledge', alertController.acknowledge);
-
-/**
- * @swagger
- * /api/alerts/{id}/resolve:
- *   put:
- *     summary: Resolve alert
- *     tags: [Alerts]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: string
- *     responses:
- *       200:
- *         description: Alert resolved
- */
-router.put('/:id/resolve', alertController.resolve);
-
-/**
- * @swagger
  * /api/alerts/thresholds:
  *   get:
  *     summary: Get all thresholds
@@ -232,5 +172,65 @@ router.post('/thresholds', authorize('ADMIN'), alertController.createThreshold);
  */
 router.put('/thresholds/:id', authorize('ADMIN'), alertController.updateThreshold);
 router.delete('/thresholds/:id', authorize('ADMIN'), alertController.deleteThreshold);
+
+/**
+ * @swagger
+ * /api/alerts/{id}:
+ *   get:
+ *     summary: Get alert by ID
+ *     tags: [Alerts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Alert details
+ */
+router.get('/:id', alertController.getById);
+
+/**
+ * @swagger
+ * /api/alerts/{id}/acknowledge:
+ *   put:
+ *     summary: Acknowledge alert
+ *     tags: [Alerts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Alert acknowledged
+ */
+router.put('/:id/acknowledge', alertController.acknowledge);
+
+/**
+ * @swagger
+ * /api/alerts/{id}/resolve:
+ *   put:
+ *     summary: Resolve alert
+ *     tags: [Alerts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Alert resolved
+ */
+router.put('/:id/resolve', alertController.resolve);
 
 export default router;

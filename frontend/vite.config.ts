@@ -36,6 +36,11 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
+      '/grafana': {
+        target: process.env.VITE_GRAFANA_PROXY_TARGET || 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 

@@ -261,8 +261,8 @@ export class PrometheusService {
     try {
       const queries = {
         serviceUp: 'spi_service_up',
-        transactionsTotal: 'rate(spi_transactions_total[5m])',
-        transactionsFailed: 'rate(spi_transactions_failed_total[5m])',
+        transactionsTotal: 'sum(rate(spi_transactions_total[5m]))',
+        transactionsFailed: 'sum(rate(spi_transactions_failed_total[5m]))',
         transactionDuration: 'histogram_quantile(0.95, rate(spi_transaction_duration_seconds_bucket[5m]))',
       };
 
@@ -295,7 +295,7 @@ export class PrometheusService {
     try {
       const queries = {
         serviceUp: 'atc_service_up',
-        transactionsTotal: 'rate(atc_transactions_total[5m])',
+        transactionsTotal: 'sum(rate(atc_transactions_total[5m]))',
         authorizationRate: 'atc_authorization_rate',
       };
 

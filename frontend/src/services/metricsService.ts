@@ -45,6 +45,19 @@ export interface QueryMetricsParams {
   interval?: '1m' | '5m' | '15m' | '1h' | '1d';
 }
 
+export interface SPIMetrics {
+  serviceUp: number;
+  transactionsPerSecond: number;
+  failedTransactionsPerSecond: number;
+  p95Duration: number;
+}
+
+export interface ATCMetrics {
+  serviceUp: number;
+  transactionsPerSecond: number;
+  authorizationRate: number;
+}
+
 // ==================== METRICS SERVICE ====================
 
 export const metricsService = {
@@ -150,6 +163,16 @@ export const metricsService = {
   async getPrometheusMetrics(): Promise<unknown> {
     const response = await api.get<ApiResponse<unknown>>('/metrics/prometheus');
     return response.data;
+  },
+
+  async getSPIMetrics(): Promise<SPIMetrics> {
+    const response = await api.get<ApiResponse<SPIMetrics>>('/metrics/spi');
+    return response.data.data;
+  },
+
+  async getATCMetrics(): Promise<ATCMetrics> {
+    const response = await api.get<ApiResponse<ATCMetrics>>('/metrics/atc');
+    return response.data.data;
   },
 };
 

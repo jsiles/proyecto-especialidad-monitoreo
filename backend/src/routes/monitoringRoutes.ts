@@ -8,10 +8,12 @@
 
 import { Router } from 'express';
 import { MonitoringController } from '../controllers/MonitoringController';
+import { MetricsController } from '../controllers/MetricsController';
 import { authenticate } from '../middlewares/authMiddleware';
 
 const router = Router();
 const monitoringController = new MonitoringController();
+const metricsController = new MetricsController();
 
 // All routes require authentication
 router.use(authenticate);
@@ -112,6 +114,10 @@ router.get('/history', monitoringController.getHistory);
  *         description: Server historical metrics
  */
 router.get('/history/:serverId', monitoringController.getServerHistory);
+
+router.get('/spi', metricsController.getSPIMetrics);
+
+router.get('/atc', metricsController.getATCMetrics);
 
 /**
  * @swagger

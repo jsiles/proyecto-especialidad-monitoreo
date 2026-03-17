@@ -65,20 +65,31 @@ export class MonitoringService {
 
     const name = serverName || server.name;
 
+    if (server.type === 'spi' || server.type === 'atc') {
+      return this.getNationalSystemMetrics(serverId, name, server.type, server.status);
+    }
+
     try {
       // Query Prometheus for server metrics
-      const [cpuResult, memoryResult, diskResult] = await Promise.all([
+      const [cpuResult, memoryResult, diskResult, uptimeResult] = await Promise.all([
         this.queryPrometheus(`cpu_usage_percent{server="${name}"}`),
         this.queryPrometheus(`memory_usage_percent{server="${name}"}`),
         this.queryPrometheus(`disk_usage_percent{server="${name}",mount="/"}`),
+        this.queryPrometheus(`server_uptime_seconds{server="${name}"}`),
       ]);
 
       const cpu = this.extractValue(cpuResult);
       const memory = this.extractValue(memoryResult);
       const disk = this.extractValue(diskResult);
+      const uptime = this.extractValue(uptimeResult);
+      const hasMetricsSignal =
+        cpuResult.length > 0 ||
+        memoryResult.length > 0 ||
+        diskResult.length > 0 ||
+        uptimeResult.length > 0;
 
-      // Determine status based on metrics
-      const status = this.determineStatus(cpu, memory, disk);
+      // Determine status based on whether Prometheus still has signal for this server
+      const status = this.determineStatus(hasMetricsSignal, cpu, memory, disk);
 
       // Update server status in database
       if (server.status !== status) {
@@ -98,7 +109,7 @@ export class MonitoringService {
           disk,
           network_in: 0, // TODO: Add network metrics
           network_out: 0,
-          uptime: 0, // TODO: Add uptime calculation
+          uptime,
         },
         last_update: new Date().toISOString(),
       };
@@ -116,6 +127,50 @@ export class MonitoringService {
         last_update: new Date().toISOString(),
       };
     }
+  }
+
+  private async getNationalSystemMetrics(
+    serverId: string,
+    serverName: string,
+    serverType: 'spi' | 'atc',
+    currentStatus: ServerStatus
+  ): Promise<ServerMetricsDTO> {
+    const isSPI = serverType === 'spi';
+    const [serviceUpResult, primaryMetricResult, secondaryMetricResult] = await Promise.all([
+      this.queryPrometheus(isSPI ? 'spi_service_up' : 'atc_service_up'),
+      this.queryPrometheus(
+        isSPI ? 'sum(rate(spi_transactions_total[5m]))' : 'sum(rate(atc_transactions_total[5m]))'
+      ),
+      this.queryPrometheus(
+        isSPI
+          ? 'sum(rate(spi_transactions_failed_total[5m]))'
+          : 'atc_authorization_rate'
+      ),
+    ]);
+
+    const serviceUp = this.extractValue(serviceUpResult);
+    const primaryMetric = this.extractValue(primaryMetricResult);
+    const secondaryMetric = this.extractValue(secondaryMetricResult);
+    const status: ServerStatus = serviceUp >= 1 ? 'online' : 'offline';
+
+    if (currentStatus !== status) {
+      serverRepository.updateStatus(serverId, status);
+    }
+
+    return {
+      server_id: serverId,
+      server_name: serverName,
+      status,
+      metrics: {
+        cpu: 0,
+        memory: 0,
+        disk: 0,
+        network_in: primaryMetric,
+        network_out: secondaryMetric,
+        uptime: serviceUp >= 1 ? 1 : 0,
+      },
+      last_update: new Date().toISOString(),
+    };
   }
 
   /**
@@ -228,11 +283,16 @@ export class MonitoringService {
   }
 
   /**
-   * Determine server status based on metrics
+   * Determine server status based on per-server metric signal and values
    */
-  private determineStatus(cpu: number, memory: number, disk: number): ServerStatus {
-    if (cpu === 0 && memory === 0 && disk === 0) {
-      return 'unknown';
+  private determineStatus(
+    hasMetricsSignal: boolean,
+    cpu: number,
+    memory: number,
+    disk: number
+  ): ServerStatus {
+    if (!hasMetricsSignal) {
+      return 'offline';
     }
     if (cpu > 95 || memory > 95 || disk > 95) {
       return 'degraded';
@@ -292,7 +352,10 @@ export class MonitoringService {
     let onlineCount = 0;
 
     for (const sm of serverMetrics) {
-      if (sm.status === 'online' || sm.status === 'degraded') {
+      const server = serverRepository.findById(sm.server_id);
+      const isResourceServer = server?.type !== 'spi' && server?.type !== 'atc';
+
+      if (isResourceServer && (sm.status === 'online' || sm.status === 'degraded')) {
         totalCpu += sm.metrics.cpu;
         totalMemory += sm.metrics.memory;
         totalDisk += sm.metrics.disk;

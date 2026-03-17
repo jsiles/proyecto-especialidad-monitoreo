@@ -4,9 +4,12 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useMetrics } from "../../hooks/useMetrics";
 import { useAlerts } from "../../hooks/useAlerts";
 import { useServers } from "../../hooks/useServers";
+import metricsService, { type ATCMetrics, type SPIMetrics } from "../../services/metricsService";
 import { format } from "date-fns";
 
-const GRAFANA_DASHBOARD_URL = "http://localhost:3001/d/main-monitoring?orgId=1&from=now-1h&to=now&theme=light&kiosk";
+const grafanaBaseUrl = (import.meta.env.VITE_GRAFANA_URL || "/grafana").replace(/\/$/, "");
+const GRAFANA_DASHBOARD_URL = `${grafanaBaseUrl}/d/main-monitoring?orgId=1&from=now-1h&to=now&theme=light&kiosk`;
+const GRAFANA_HOME_URL = `${grafanaBaseUrl}/`;
 
 export function Dashboard() {
   // Hooks con auto-refresh cada 10 segundos
@@ -16,6 +19,9 @@ export function Dashboard() {
 
   // Estado para datos históricos
   const [historicalData, setHistoricalData] = useState<any[]>([]);
+  const [spiMetrics, setSpiMetrics] = useState<SPIMetrics | null>(null);
+  const [atcMetrics, setAtcMetrics] = useState<ATCMetrics | null>(null);
+  const [nationalSystemsLoading, setNationalSystemsLoading] = useState(false);
 
   // Calcular promedios de las métricas
   const avgCpu = summary?.average_cpu || 0;
@@ -44,6 +50,48 @@ export function Dashboard() {
     }
   }, [metrics]);
 
+  useEffect(() => {
+    let active = true;
+
+    const fetchNationalSystems = async () => {
+      setNationalSystemsLoading(true);
+      try {
+        const [spi, atc] = await Promise.all([
+          metricsService.getSPIMetrics(),
+          metricsService.getATCMetrics(),
+        ]);
+
+        if (!active) {
+          return;
+        }
+
+        setSpiMetrics(spi);
+        setAtcMetrics(atc);
+      } catch (error) {
+        if (!active) {
+          return;
+        }
+
+        console.error('Error fetching SPI/ATC metrics:', error);
+      } finally {
+        if (active) {
+          setNationalSystemsLoading(false);
+        }
+      }
+    };
+
+    void fetchNationalSystems();
+
+    const intervalId = setInterval(() => {
+      void fetchNationalSystems();
+    }, 10000);
+
+    return () => {
+      active = false;
+      clearInterval(intervalId);
+    };
+  }, []);
+
   // Función para obtener color según severidad
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -62,6 +110,71 @@ export function Dashboard() {
       default: return 'text-gray-500';
     }
   };
+
+  const renderServerMetrics = (
+    server: { type?: string },
+    serverMetric?: { cpu: number; memory: number; disk: number }
+  ) => {
+    if (server.type === 'spi') {
+      return spiMetrics ? (
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div>
+            <div className="text-gray-500">TPS</div>
+            <div className="font-medium">{spiMetrics.transactionsPerSecond.toFixed(2)}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">Failed/s</div>
+            <div className="font-medium">{spiMetrics.failedTransactionsPerSecond.toFixed(2)}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">P95</div>
+            <div className="font-medium">{spiMetrics.p95Duration.toFixed(2)}s</div>
+          </div>
+        </div>
+      ) : null;
+    }
+
+    if (server.type === 'atc') {
+      return atcMetrics ? (
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div>
+            <div className="text-gray-500">TPS</div>
+            <div className="font-medium">{atcMetrics.transactionsPerSecond.toFixed(2)}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">Auth</div>
+            <div className="font-medium">{(atcMetrics.authorizationRate * 100).toFixed(2)}%</div>
+          </div>
+          <div>
+            <div className="text-gray-500">State</div>
+            <div className="font-medium">{atcMetrics.serviceUp === 1 ? 'UP' : 'DOWN'}</div>
+          </div>
+        </div>
+      ) : null;
+    }
+
+    if (!serverMetric) {
+      return null;
+    }
+
+    return (
+      <div className="grid grid-cols-3 gap-2 text-xs">
+        <div>
+          <div className="text-gray-500">CPU</div>
+          <div className="font-medium">{Math.round(serverMetric.cpu)}%</div>
+        </div>
+        <div>
+          <div className="text-gray-500">RAM</div>
+          <div className="font-medium">{Math.round(serverMetric.memory)}%</div>
+        </div>
+        <div>
+          <div className="text-gray-500">Disk</div>
+          <div className="font-medium">{Math.round(serverMetric.disk)}%</div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Page Title and Refresh Button */}
@@ -70,6 +183,12 @@ export function Dashboard() {
         <button
           onClick={() => {
             fetchMetrics();
+            void metricsService.getSPIMetrics().then(setSpiMetrics).catch((error) => {
+              console.error('Error refreshing SPI metrics:', error);
+            });
+            void metricsService.getATCMetrics().then(setAtcMetrics).catch((error) => {
+              console.error('Error refreshing ATC metrics:', error);
+            });
           }}
           disabled={metricsLoading}
           className="flex items-center gap-2 px-4 py-2 bg-[#3b82f6] text-white rounded-md hover:bg-[#2563eb] disabled:opacity-50 disabled:cursor-not-allowed"
@@ -283,6 +402,70 @@ export function Dashboard() {
             </div>
           </div>
 
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-700">SPI Metrics</h3>
+                <span className={`text-xs px-2 py-1 rounded-full ${spiMetrics?.serviceUp === 1 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {spiMetrics?.serviceUp === 1 ? 'UP' : 'DOWN'}
+                </span>
+              </div>
+              {nationalSystemsLoading && !spiMetrics ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#3b82f6]"></div>
+                </div>
+              ) : spiMetrics ? (
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <div className="text-gray-500 mb-1">Transactions/sec</div>
+                    <div className="text-2xl font-medium text-gray-800">{spiMetrics.transactionsPerSecond.toFixed(2)}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <div className="text-gray-500 mb-1">Failed/sec</div>
+                    <div className="text-2xl font-medium text-gray-800">{spiMetrics.failedTransactionsPerSecond.toFixed(2)}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-4 col-span-2">
+                    <div className="text-gray-500 mb-1">P95 Duration</div>
+                    <div className="text-2xl font-medium text-gray-800">{spiMetrics.p95Duration.toFixed(2)} s</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-sm">SPI metrics unavailable</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-700">ATC Metrics</h3>
+                <span className={`text-xs px-2 py-1 rounded-full ${atcMetrics?.serviceUp === 1 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {atcMetrics?.serviceUp === 1 ? 'UP' : 'DOWN'}
+                </span>
+              </div>
+              {nationalSystemsLoading && !atcMetrics ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#3b82f6]"></div>
+                </div>
+              ) : atcMetrics ? (
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <div className="text-gray-500 mb-1">Transactions/sec</div>
+                    <div className="text-2xl font-medium text-gray-800">{atcMetrics.transactionsPerSecond.toFixed(2)}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <div className="text-gray-500 mb-1">Authorization Rate</div>
+                    <div className="text-2xl font-medium text-gray-800">{(atcMetrics.authorizationRate * 100).toFixed(2)}%</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-sm">ATC metrics unavailable</p>
+                </div>
+              )}
+            </div>
+          </div>
+
           <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4 gap-4">
               <div>
@@ -290,7 +473,7 @@ export function Dashboard() {
                 <p className="text-sm text-gray-500">Visualización embebida desde Grafana con datos de Prometheus.</p>
               </div>
               <a
-                href="http://localhost:3001"
+                href={GRAFANA_HOME_URL}
                 target="_blank"
                 rel="noreferrer"
                 className="px-4 py-2 bg-[#2c3e50] text-white rounded-md hover:bg-[#34495e] transition-colors"
@@ -333,22 +516,7 @@ export function Dashboard() {
                       <div className="text-xs text-gray-500 mb-3">
                         {server.ip_address} • {server.type}
                       </div>
-                      {serverMetric && (
-                        <div className="grid grid-cols-3 gap-2 text-xs">
-                          <div>
-                            <div className="text-gray-500">CPU</div>
-                            <div className="font-medium">{Math.round(serverMetric.cpu)}%</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500">RAM</div>
-                            <div className="font-medium">{Math.round(serverMetric.memory)}%</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500">Disk</div>
-                            <div className="font-medium">{Math.round(serverMetric.disk)}%</div>
-                          </div>
-                        </div>
-                      )}
+                      {renderServerMetrics(server, serverMetric)}
                     </div>
                   );
                 })}
