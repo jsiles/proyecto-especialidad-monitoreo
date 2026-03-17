@@ -10,7 +10,7 @@ Sistema Full Stack de monitoreo bancario para instituciones financieras bolivian
 
 ## 🎯 Objetivos Principales
 
-- ✅ Monitoreo de 5 servidores críticos + 3 sistemas nacionales simulados (SPI, ATC/Linkser)
+- ✅ Monitoreo de 5 servidores internos + 2 gateways nacionales simulados (SPI y ATC)
 - ✅ Detección de fallas en menos de 30 minutos
 - ✅ Generación automática de reportes ASFI (diario y semanal)
 - ✅ Dashboard en tiempo real con métricas de CPU, RAM y disponibilidad
@@ -37,7 +37,7 @@ Sistema Full Stack de monitoreo bancario para instituciones financieras bolivian
 ✅ Fase 3: API REST y Base de Datos        (100%)
 ✅ Fase 4: Frontend Base                   (100%)
 ✅ Fase 5: Integración Frontend-Backend    (100%)
-🟡 Fase 6: Monitoreo Prometheus/Grafana    (base preparada)
+✅ Fase 6: Monitoreo Prometheus/Grafana    (funcional)
 🟡 Fase 7: Sistema de Alertas Avanzado     (implementación funcional parcial)
 🟡 Fase 8: Reportes ASFI                   (implementación funcional parcial)
 ✅ Fase 9: Testing y QA                    (100%)
@@ -52,7 +52,9 @@ AVANCE VALIDADO:
 
 - El **MVP funcional** del sistema ya cubre autenticación, dashboard, servidores, alertas y reportes desde la aplicación.
 - La **Fase 9** quedó validada con cobertura superior a la meta en backend y frontend.
-- Las **Fases 6-8** no están vacías: ya existe base de monitoreo, exporters mock, configuración de Prometheus/Grafana y flujos funcionales de alertas/reportes, pero aún faltan integraciones avanzadas por consolidar.
+- La **Fase 6** ya está operativa con Prometheus, Grafana embebido y exporters mock activos en Docker.
+- El dashboard principal ya refleja **7 entidades monitoreadas unificadas**: `spi-gateway`, `atc-gateway` y los 5 `srv-*`.
+- Las **Fases 7-8** siguen funcionales pero todavía requieren consolidación en notificaciones avanzadas y métricas ASFI complementarias.
 
 ### ✅ Cobertura validada en Fase 9
 
@@ -115,9 +117,11 @@ docker-compose logs -f
 ### Acceso a la aplicación
 
 - **Frontend**: http://localhost:5173 en desarrollo
+- **Frontend Docker**: http://localhost
 - **Backend API**: http://localhost:3000/api
 - **Prometheus**: http://localhost:9090 al levantar el stack de monitoreo
 - **Grafana**: http://localhost:3001 al levantar el stack de monitoreo
+- **Grafana embebido/proxied**: http://localhost/grafana
 
 ## 📁 Estructura del Proyecto
 
@@ -135,12 +139,21 @@ proyecto-especialidad-monitoreo/
 ## 📊 Funcionalidades Implementadas
 
 ### ✅ Dashboard (Tiempo Real)
-- ✅ Estado general de servidores (online/offline)
+- ✅ Estado general unificado de 7 entidades monitoreadas
 - ✅ Métricas en tiempo real (CPU, RAM, Disk, Availability)
 - ✅ Gráficos de área con 3 métricas simultáneas
 - ✅ Auto-refresh cada 10 segundos
 - ✅ Panel de alertas activas
 - ✅ Lista de servidores con estados visuales
+- ✅ Dashboard de Grafana embebido mediante `/grafana`
+- ✅ Métricas nacionales separadas para `spi-gateway` y `atc-gateway`
+
+### ✅ Monitoreo Prometheus / Grafana
+- ✅ Exporters mock de `SPI`, `ATC` y `server-exporter` activos
+- ✅ Datasource Prometheus provisionado automáticamente en Grafana
+- ✅ Dashboard principal provisionado desde `grafana/provisioning/dashboards/main-dashboard.json`
+- ✅ Conteos y estado unificados entre backend y dashboard embebido
+- ℹ️ Los gateways `SPI` y `ATC` muestran métricas operativas propias (`TPS`, errores, authorization rate), no CPU/RAM/Disk, porque sus exporters no exponen métricas de infraestructura
 
 ### ✅ Gestión de Servidores
 - ✅ CRUD completo (Create, Read, Update, Delete)
@@ -180,7 +193,6 @@ proyecto-especialidad-monitoreo/
 - ✅ Logs de auditoría
 
 ### ⏳ Pendientes de consolidación
-- ⏳ Integración operativa completa con Prometheus y Grafana dentro del flujo de la aplicación
 - ⏳ Activación end-to-end de notificaciones por email y WebSocket
 - ⏳ Consolidación del stack de exporters mock dentro del entorno Docker de monitoreo
 - ⏳ Enriquecer reportes con gráficos operativos y métricas avanzadas de disponibilidad
