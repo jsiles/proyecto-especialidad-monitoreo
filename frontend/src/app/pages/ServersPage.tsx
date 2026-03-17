@@ -37,7 +37,6 @@ export function ServersPage() {
     ip_address: "",
     type: "application",
     environment: "production",
-    description: "",
   });
 
   // Clear messages after 3 seconds
@@ -59,7 +58,6 @@ export function ServersPage() {
         ip_address: server.ip_address || "",
         type: server.type || "application",
         environment: server.environment || "production",
-        description: server.description || "",
       });
     } else {
       setEditingId(null);
@@ -68,7 +66,6 @@ export function ServersPage() {
         ip_address: "",
         type: "application",
         environment: "production",
-        description: "",
       });
     }
     setShowForm(true);
@@ -82,7 +79,6 @@ export function ServersPage() {
       ip_address: "",
       type: "application",
       environment: "production",
-      description: "",
     });
   };
 
@@ -225,7 +221,7 @@ export function ServersPage() {
                     </label>
                     <select
                       value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as CreateServerData['type'] })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       required
                     >
@@ -244,7 +240,7 @@ export function ServersPage() {
                     </label>
                     <select
                       value={formData.environment}
-                      onChange={(e) => setFormData({ ...formData, environment: e.target.value })}
+                      onChange={(e) => setFormData({ ...formData, environment: e.target.value as CreateServerData['environment'] })}
                       className="w-full px-3 py-2 border border-gray-300 rounded-md"
                       required
                     >
@@ -256,16 +252,9 @@ export function ServersPage() {
                   </div>
 
                   <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Description
-                    </label>
-                    <textarea
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Optional description..."
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                      rows={3}
-                    />
+                    <div className="rounded-md border border-dashed border-gray-300 bg-gray-50 px-3 py-3 text-sm text-gray-500">
+                      La descripción no está soportada todavía por el API de servidores actual.
+                    </div>
                   </div>
                 </div>
 

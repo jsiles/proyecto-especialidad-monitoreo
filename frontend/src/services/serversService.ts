@@ -11,24 +11,25 @@ export interface Server {
   id: string;
   name: string;
   ip_address: string;
-  type: 'application' | 'database' | 'web' | 'cache' | 'other';
-  environment: 'production' | 'staging' | 'development';
-  status?: 'online' | 'offline' | 'degraded';
+  type: 'application' | 'database' | 'web' | 'cache' | 'spi' | 'atc' | 'other';
+  environment: 'production' | 'staging' | 'development' | 'testing';
+  status?: 'online' | 'offline' | 'degraded' | 'unknown';
   created_at: string;
+  updated_at?: string;
 }
 
 export interface CreateServerData {
   name: string;
   ip_address: string;
-  type: string;
-  environment?: string;
+  type?: Server['type'];
+  environment?: Server['environment'];
 }
 
 export interface UpdateServerData {
   name?: string;
   ip_address?: string;
-  type?: string;
-  environment?: string;
+  type?: Server['type'];
+  environment?: Server['environment'];
 }
 
 export interface ServerListResponse {
@@ -73,8 +74,8 @@ export const serverService = {
    * Obtener servidor por ID
    */
   async getById(id: string): Promise<Server> {
-    const response = await api.get<ApiResponse<Server>>(`/servers/${id}`);
-    return response.data.data;
+    const response = await api.get<ApiResponse<{ server: Server }>>(`/servers/${id}`);
+    return response.data.data.server;
   },
 
   /**

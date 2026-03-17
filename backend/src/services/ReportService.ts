@@ -552,7 +552,7 @@ export class ReportService {
   private addFooter(doc: PDFKit.PDFDocument): void {
     const pages = doc.bufferedPageRange();
     for (let i = 0; i < pages.count; i++) {
-      doc.switchToPage(i);
+      doc.switchToPage(pages.start + i);
       doc.fontSize(8).font('Helvetica');
       doc.text(
         `Plataforma de Monitoreo - Página ${i + 1} de ${pages.count}`,

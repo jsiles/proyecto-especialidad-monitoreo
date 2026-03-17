@@ -259,12 +259,14 @@ export class MonitoringService {
         const existingAlerts = alertRepository.findAll({
           server_id: serverId,
           resolved: false,
-          limit: 1,
+          limit: 100,
         });
 
         const hasRecentAlert = existingAlerts.some(
-          a => a.message.includes(threshold.metric_type) && 
-               a.severity === threshold.severity
+          (alert) =>
+            (alert.threshold_id === threshold.id ||
+              alert.message.toLowerCase().includes(threshold.metric_type.toLowerCase())) &&
+            alert.severity === threshold.severity
         );
 
         if (!hasRecentAlert) {

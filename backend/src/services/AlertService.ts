@@ -19,6 +19,7 @@ import { AlertWithDetails } from '../models/Alert';
 import { ThresholdWithServer } from '../models/AlertThreshold';
 import { logger } from '../utils/logger';
 import { NotFoundError, BadRequestError } from '../middlewares/errorHandler';
+import notificationService from './NotificationService';
 
 export class AlertService {
   /**
@@ -52,7 +53,19 @@ export class AlertService {
       severity: severity as AlertResponseDTO['severity'],
       limit: 100,
     });
-    return alerts.map(this.toAlertResponseDTO);
+
+    const seen = new Set<string>();
+
+    return alerts
+      .filter((alert) => {
+        const key = `${alert.server_id}:${alert.severity}:${alert.message.toLowerCase()}`;
+        if (seen.has(key)) {
+          return false;
+        }
+        seen.add(key);
+        return true;
+      })
+      .map(this.toAlertResponseDTO);
   }
 
   /**
@@ -84,8 +97,9 @@ export class AlertService {
       serverId: data.server_id, 
       severity: data.severity 
     });
-
-    return this.toAlertResponseDTO(alertWithDetails);
+    const response = this.toAlertResponseDTO(alertWithDetails);
+    notificationService.emitAlertCreated(response);
+    return response;
   }
 
   /**
@@ -113,7 +127,9 @@ export class AlertService {
     logger.info('Alert acknowledged', { alertId: id, acknowledgedBy: username });
 
     const alertWithDetails = alertRepository.findByIdWithDetails(updated!.id)!;
-    return this.toAlertResponseDTO(alertWithDetails);
+    const response = this.toAlertResponseDTO(alertWithDetails);
+    notificationService.emitAlertAcknowledged(response);
+    return response;
   }
 
   /**
@@ -143,7 +159,9 @@ export class AlertService {
     logger.info('Alert resolved', { alertId: id });
 
     const alertWithDetails = alertRepository.findByIdWithDetails(updated!.id)!;
-    return this.toAlertResponseDTO(alertWithDetails);
+    const response = this.toAlertResponseDTO(alertWithDetails);
+    notificationService.emitAlertResolved(response);
+    return response;
   }
 
   /**

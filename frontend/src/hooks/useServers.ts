@@ -16,6 +16,7 @@ interface UseServersReturn {
   loading: boolean;
   error: string | null;
   fetchServers: () => Promise<void>;
+  refreshServers: () => Promise<void>;
   getServer: (id: string) => Promise<Server | null>;
   createServer: (data: CreateServerData) => Promise<Server | null>;
   updateServer: (id: string, data: UpdateServerData) => Promise<Server | null>;
@@ -133,6 +134,7 @@ export function useServers(autoFetch = true): UseServersReturn {
     loading,
     error,
     fetchServers,
+    refreshServers: fetchServers,
     getServer,
     createServer,
     updateServer,

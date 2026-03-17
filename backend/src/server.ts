@@ -10,6 +10,9 @@ import { initializeDatabase } from './database/connection';
 import { runSeeds } from './database/seeds';
 import { WebSocketGateway } from './websocket/WebSocketGateway';
 import dotenv from 'dotenv';
+import { alertService } from './services/AlertService';
+import notificationService from './services/NotificationService';
+import alertEvaluationService from './services/AlertEvaluationService';
 
 // Load environment variables
 dotenv.config();
@@ -35,9 +38,14 @@ async function startServer(): Promise<void> {
     await runSeeds();
     logger.info('Seeds completed');
 
+    alertService.initializeDefaultThresholds();
+
     // Initialize WebSocket
     wsGateway = new WebSocketGateway(server);
+    notificationService.setGateway(wsGateway);
     logger.info('WebSocket gateway initialized');
+
+    alertEvaluationService.start();
 
     // Start listening
     server.listen(PORT, () => {
@@ -56,6 +64,7 @@ async function startServer(): Promise<void> {
 // Graceful shutdown
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully...');
+  alertEvaluationService.stop();
   server.close(() => {
     logger.info('Server closed');
     process.exit(0);
@@ -64,6 +73,7 @@ process.on('SIGTERM', () => {
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully...');
+  alertEvaluationService.stop();
   server.close(() => {
     logger.info('Server closed');
     process.exit(0);

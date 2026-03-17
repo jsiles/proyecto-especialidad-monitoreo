@@ -37,12 +37,32 @@ Sistema Full Stack de monitoreo bancario para instituciones financieras bolivian
 ✅ Fase 3: API REST y Base de Datos        (100%)
 ✅ Fase 4: Frontend Base                   (100%)
 ✅ Fase 5: Integración Frontend-Backend    (100%)
-⏳ Fase 6: Monitoreo Prometheus/Grafana    (0%)
-⏳ Fase 7: Sistema de Alertas Avanzado     (0%)
-⏳ Fase 8: Reportes ASFI                   (0%)
+🟡 Fase 6: Monitoreo Prometheus/Grafana    (base preparada)
+🟡 Fase 7: Sistema de Alertas Avanzado     (implementación funcional parcial)
+🟡 Fase 8: Reportes ASFI                   (implementación funcional parcial)
+✅ Fase 9: Testing y QA                    (100%)
 ────────────────────────────────────────────────
-PROGRESO TOTAL: 60%
+AVANCE VALIDADO:
+- Backend y frontend funcionales
+- Suite de pruebas estable y relanzada
+- Cobertura Fase 9 superada en backend y frontend
 ```
+
+### 📌 Resumen ejecutivo del estado actual
+
+- El **MVP funcional** del sistema ya cubre autenticación, dashboard, servidores, alertas y reportes desde la aplicación.
+- La **Fase 9** quedó validada con cobertura superior a la meta en backend y frontend.
+- Las **Fases 6-8** no están vacías: ya existe base de monitoreo, exporters mock, configuración de Prometheus/Grafana y flujos funcionales de alertas/reportes, pero aún faltan integraciones avanzadas por consolidar.
+
+### ✅ Cobertura validada en Fase 9
+
+| Módulo | Statements | Branches | Functions | Lines |
+|--------|------------|----------|-----------|-------|
+| **Backend** | 91.97% | 75.87% | 93.22% | 91.97% |
+| **Frontend** | 93.23% | 75.00% | 92.88% | 93.35% |
+
+- Backend: cobertura por encima del objetivo minimo en todas las metricas.
+- Frontend: suite optimizada, ramas elevadas a 75.00% y cobertura final por encima del objetivo de la Fase 9.
 
 ## 🚀 Inicio Rápido
 
@@ -79,7 +99,7 @@ Username: admin
 Password: admin123
 ```
 
-### Ejecución con Docker (Pendiente - Fase 6+)
+### Ejecución con Docker (stack extendido)
 
 ```bash
 # Copiar variables de entorno
@@ -94,10 +114,10 @@ docker-compose logs -f
 
 ### Acceso a la aplicación
 
-- **Frontend**: http://localhost
+- **Frontend**: http://localhost:5173 en desarrollo
 - **Backend API**: http://localhost:3000/api
-- **Prometheus**: http://localhost:9090
-- **Grafana**: http://localhost:3001 (admin/admin)
+- **Prometheus**: http://localhost:9090 al levantar el stack de monitoreo
+- **Grafana**: http://localhost:3001 al levantar el stack de monitoreo
 
 ## 📁 Estructura del Proyecto
 
@@ -139,6 +159,7 @@ proyecto-especialidad-monitoreo/
 - ✅ Historial completo de alertas
 - ✅ CRUD de umbrales (Create, Delete)
 - ✅ Auto-refresh cada 10 segundos
+- 🟡 Base preparada para notificaciones en tiempo real y extensiones de alertamiento avanzado
 
 ### ✅ Reportes ASFI
 - ✅ Generación rápida de reporte ASFI
@@ -148,6 +169,7 @@ proyecto-especialidad-monitoreo/
 - ✅ Descarga de PDFs
 - ✅ Historial de reportes generados
 - ✅ Visualización de metadatos
+- 🟡 Pendiente de consolidar métricas avanzadas de cumplimiento como MTTR y MTBF
 
 ### ✅ Autenticación y Seguridad
 - ✅ Login con JWT
@@ -157,14 +179,11 @@ proyecto-especialidad-monitoreo/
 - ✅ Contraseñas hasheadas (bcrypt)
 - ✅ Logs de auditoría
 
-### ⏳ Próximas Funcionalidades (Fases 6-8)
-- ⏳ Integración con Prometheus
-- ⏳ Dashboards Grafana embebidos
-- ⏳ Notificaciones por email
-- ⏳ WebSocket para notificaciones en tiempo real
-- ⏳ Exporters de métricas (SPI, ATC, Linkser)
-- ⏳ Reportes PDF con gráficos
-- ⏳ Cálculo de MTTR y MTBF
+### ⏳ Pendientes de consolidación
+- ⏳ Integración operativa completa con Prometheus y Grafana dentro del flujo de la aplicación
+- ⏳ Activación end-to-end de notificaciones por email y WebSocket
+- ⏳ Consolidación del stack de exporters mock dentro del entorno Docker de monitoreo
+- ⏳ Enriquecer reportes con gráficos operativos y métricas avanzadas de disponibilidad
 
 ## 🔐 Seguridad
 
@@ -220,12 +239,6 @@ proyecto-especialidad-monitoreo/
 - POST   /api/reports/generate/asfi (admin/operator)
 - DELETE /api/reports/:id (admin only)
 
-## � Documentación Adicional
-
-- 📖 [**Guía Rápida de Testing**](GUIA_RAPIDA_TESTING.md) - Instrucciones paso a paso para probar la aplicación
-- ✅ [**Fase 5 Completada**](FASE_5_COMPLETADA.md) - Resumen detallado de la integración frontend-backend
-- 📋 [**Instrucciones de Desarrollo**](.github/copilot-instructions.md) - Guía completa del proyecto y estándares
-
 ## 🎯 Guía de Testing Rápida
 
 ### 1. Iniciar Aplicación
@@ -266,7 +279,7 @@ npm run preview      # Preview del build
 npm run lint         # Linter
 ```
 
-## �📝 Licencia
+## 📝 Licencia
 
 Proyecto académico - Universidad Católica Boliviana "San Pablo"
 

@@ -9,6 +9,7 @@ import alertsService, {
   AlertThreshold,
   CreateThresholdData,
 } from '../services/alertsService';
+import type { RealtimeAlertEvent } from './useWebSocket';
 import { getErrorMessage } from '../services/api';
 
 interface UseAlertsReturn {
@@ -168,6 +169,59 @@ export function useAlerts(
 
     return () => clearInterval(intervalId);
   }, [refreshInterval, fetchActiveAlerts]);
+
+  useEffect(() => {
+    const handleAlertNew = (event: Event) => {
+      const customEvent = event as CustomEvent<RealtimeAlertEvent>;
+      const incoming = {
+        server_id: customEvent.detail.serverId,
+        server_name: customEvent.detail.serverName,
+        severity: customEvent.detail.type,
+        acknowledged: customEvent.detail.acknowledged,
+        created_at: new Date(customEvent.detail.timestamp).toISOString(),
+        id: customEvent.detail.id,
+        message: customEvent.detail.message,
+        resolved: false,
+      } as Alert;
+
+      setActiveAlerts((prev) => [incoming, ...prev.filter((alert) => alert.id !== incoming.id)]);
+      setAlerts((prev) => [incoming, ...prev.filter((alert) => alert.id !== incoming.id)]);
+    };
+
+    const handleAlertAcknowledged = (event: Event) => {
+      const customEvent = event as CustomEvent<{ alertId: string; timestamp: string | Date }>;
+      setAlerts((prev) => prev.map((alert) => alert.id === customEvent.detail.alertId ? {
+        ...alert,
+        acknowledged: true,
+        acknowledged_at: new Date(customEvent.detail.timestamp).toISOString(),
+      } : alert));
+      setActiveAlerts((prev) => prev.map((alert) => alert.id === customEvent.detail.alertId ? {
+        ...alert,
+        acknowledged: true,
+        acknowledged_at: new Date(customEvent.detail.timestamp).toISOString(),
+      } : alert));
+    };
+
+    const handleAlertResolved = (event: Event) => {
+      const customEvent = event as CustomEvent<{ alertId: string; resolvedAt: string | Date }>;
+      setAlerts((prev) => prev.map((alert) => alert.id === customEvent.detail.alertId ? {
+        ...alert,
+        resolved: true,
+        resolved_at: new Date(customEvent.detail.resolvedAt).toISOString(),
+      } : alert));
+      setActiveAlerts((prev) => prev.filter((alert) => alert.id !== customEvent.detail.alertId));
+    };
+
+    window.addEventListener('monitoring:alert-new', handleAlertNew as EventListener);
+    window.addEventListener('monitoring:alert-acknowledged', handleAlertAcknowledged as EventListener);
+    window.addEventListener('monitoring:alert-resolved', handleAlertResolved as EventListener);
+
+    return () => {
+      window.removeEventListener('monitoring:alert-new', handleAlertNew as EventListener);
+      window.removeEventListener('monitoring:alert-acknowledged', handleAlertAcknowledged as EventListener);
+      window.removeEventListener('monitoring:alert-resolved', handleAlertResolved as EventListener);
+    };
+  }, []);
 
   return {
     alerts,

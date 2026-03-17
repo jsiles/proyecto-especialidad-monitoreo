@@ -6,7 +6,7 @@ import { useAuth } from "../../contexts/AuthContext";
 export function Layout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleLogout = async () => {

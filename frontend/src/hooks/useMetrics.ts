@@ -21,7 +21,7 @@ interface UseMetricsReturn {
   fetchServerHistory: (
     serverId: string,
     params?: QueryMetricsParams
-  ) => Promise<Metrics[]>;
+  ) => Promise<import('../services/metricsService').MetricsHistory[]>;
 }
 
 export function useMetrics(
@@ -67,7 +67,7 @@ export function useMetrics(
     async (
       serverId: string,
       params?: QueryMetricsParams
-    ): Promise<Metrics[]> => {
+    ): Promise<import('../services/metricsService').MetricsHistory[]> => {
       setError(null);
       try {
         const data = await metricsService.getServerHistory(serverId, params);

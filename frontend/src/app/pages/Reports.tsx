@@ -48,7 +48,7 @@ export function Reports() {
     setLoading(true);
     try {
       const data = await reportsService.getAll();
-      setReports(data);
+      setReports(data.reports);
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -74,9 +74,9 @@ export function Reports() {
     try {
       const reportData: GenerateReportData = {
         type: reportType,
-        start_date: fromDate,
-        end_date: toDate,
-        server_ids: selectedServers.length > 0 ? selectedServers : undefined,
+        from: fromDate,
+        to: toDate,
+        servers: selectedServers.length > 0 ? selectedServers : undefined,
       };
 
       const newReport = await reportsService.generate(reportData);
@@ -95,10 +95,9 @@ export function Reports() {
     setSuccess("");
 
     try {
-      const reportData: GenerateReportData = {
-        type: "asfi",
-        start_date: fromDate,
-        end_date: toDate,
+      const reportData = {
+        from: fromDate,
+        to: toDate,
       };
 
       const newReport = await reportsService.generateAsfi(reportData);
@@ -336,9 +335,13 @@ export function Reports() {
                         </span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {report.start_date && report.end_date ? (
+                        {report.from_date && report.to_date ? (
                           <>
-                            {format(new Date(report.start_date), 'MMM dd, yyyy')} - {format(new Date(report.end_date), 'MMM dd, yyyy')}
+                            {format(new Date(report.from_date), 'MMM dd, yyyy')} - {format(new Date(report.to_date), 'MMM dd, yyyy')}
+                          </>
+                        ) : report.period_start && report.period_end ? (
+                          <>
+                            {format(new Date(report.period_start), 'MMM dd, yyyy')} - {format(new Date(report.period_end), 'MMM dd, yyyy')}
                           </>
                         ) : (
                           'N/A'

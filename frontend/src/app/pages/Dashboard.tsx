@@ -6,6 +6,8 @@ import { useAlerts } from "../../hooks/useAlerts";
 import { useServers } from "../../hooks/useServers";
 import { format } from "date-fns";
 
+const GRAFANA_DASHBOARD_URL = "http://localhost:3001/d/main-monitoring?orgId=1&from=now-1h&to=now&theme=light&kiosk";
+
 export function Dashboard() {
   // Hooks con auto-refresh cada 10 segundos
   const { metrics, summary, loading: metricsLoading, fetchMetrics } = useMetrics(true, 10000);
@@ -32,7 +34,7 @@ export function Dashboard() {
   // Preparar datos para el gráfico (últimas 20 métricas)
   useEffect(() => {
     if (metrics.length > 0) {
-      const chartData = metrics.slice(-20).map((m, index) => ({
+      const chartData = metrics.slice(-20).map((m) => ({
         name: format(new Date(m.timestamp), 'HH:mm'),
         cpu: Math.round(m.cpu),
         memory: Math.round(m.memory),
@@ -278,6 +280,30 @@ export function Dashboard() {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+
+          <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+            <div className="flex items-center justify-between mb-4 gap-4">
+              <div>
+                <h3 className="text-lg font-medium text-gray-700">Grafana Dashboard</h3>
+                <p className="text-sm text-gray-500">Visualización embebida desde Grafana con datos de Prometheus.</p>
+              </div>
+              <a
+                href="http://localhost:3001"
+                target="_blank"
+                rel="noreferrer"
+                className="px-4 py-2 bg-[#2c3e50] text-white rounded-md hover:bg-[#34495e] transition-colors"
+              >
+                Open Grafana
+              </a>
+            </div>
+            <div className="overflow-hidden rounded-lg border border-gray-200">
+              <iframe
+                src={GRAFANA_DASHBOARD_URL}
+                title="Grafana Monitoring Dashboard"
+                className="w-full h-[520px] bg-white"
+              />
             </div>
           </div>
 

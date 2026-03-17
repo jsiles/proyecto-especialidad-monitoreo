@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -36,6 +36,33 @@ export default defineConfig({
         ws: true,
         changeOrigin: true,
       },
+    },
+  },
+
+  test: {
+    globals: true,
+    environment: 'jsdom',
+    setupFiles: './src/test/setup.ts',
+    css: false,
+    fileParallelism: false,
+    // Use 'forks' pool (child_process.fork) instead of 'threads' (worker_threads).
+    // Worker threads have a default 128MB heap limit; child processes do not.
+    // This prevents "JS heap out of memory" when loading heavy UI modules.
+    pool: 'forks',
+    maxWorkers: 1,
+    execArgv: ['--max-old-space-size=8192'],
+    // Recycle the worker before module graphs from UI-heavy tests accumulate indefinitely.
+    vmMemoryLimit: '512MB',
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov', 'json-summary'],
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: [
+        'src/main.tsx',
+        'src/vite-env.d.ts',
+        'src/test/**',
+        'src/app/components/ui/**',
+      ],
     },
   },
 })

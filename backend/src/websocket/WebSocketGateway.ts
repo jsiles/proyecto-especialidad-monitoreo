@@ -36,9 +36,20 @@ export interface AlertNotification {
 export interface ServerStatusChange {
   serverId: string;
   serverName: string;
-  previousStatus: 'online' | 'offline' | 'degraded';
-  currentStatus: 'online' | 'offline' | 'degraded';
+  previousStatus: 'online' | 'offline' | 'degraded' | 'unknown';
+  currentStatus: 'online' | 'offline' | 'degraded' | 'unknown';
   timestamp: Date;
+}
+
+export interface AlertAcknowledgedEvent {
+  alertId: string;
+  acknowledgedBy: string;
+  timestamp: Date;
+}
+
+export interface AlertResolvedEvent {
+  alertId: string;
+  resolvedAt: Date;
 }
 
 // ==================== WEBSOCKET GATEWAY ====================
@@ -203,6 +214,14 @@ export class WebSocketGateway {
       type: alert.type,
       serverId: alert.serverId,
     });
+  }
+
+  public emitAlertAcknowledged(event: AlertAcknowledgedEvent): void {
+    this.io.to('alerts').emit('alert:acknowledged', event);
+  }
+
+  public emitAlertResolved(event: AlertResolvedEvent): void {
+    this.io.to('alerts').emit('alert:resolved', event);
   }
 
   /**

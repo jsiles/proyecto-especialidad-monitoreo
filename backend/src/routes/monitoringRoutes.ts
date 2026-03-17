@@ -129,6 +129,26 @@ router.get('/history/:serverId', monitoringController.getServerHistory);
  *             schema:
  *               type: string
  */
+/**
+ * @swagger
+ * /api/metrics/server/{serverId}:
+ *   get:
+ *     summary: Get current metrics for a specific server
+ *     tags: [Metrics]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: serverId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Server metrics
+ */
+router.get('/server/:serverId', monitoringController.getServerMetrics);
+
 router.get('/prometheus', monitoringController.getPrometheusMetrics);
 
 export default router;

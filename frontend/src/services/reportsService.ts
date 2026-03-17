@@ -10,6 +10,8 @@ import api, { ApiResponse } from './api';
 export interface Report {
   id: string;
   type: 'daily' | 'weekly' | 'monthly' | 'asfi' | 'custom';
+  from_date?: string;
+  to_date?: string;
   period_start: string;
   period_end: string;
   status: 'pending' | 'processing' | 'completed' | 'failed';
