@@ -1,6 +1,6 @@
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
-import useWebSocket from './useWebSocket';
+import useWebSocket, { normalizeSocketBaseUrl } from './useWebSocket';
 
 type Handler = (...args: any[]) => void;
 
@@ -44,9 +44,10 @@ describe('useWebSocket', () => {
     const onAlert = vi.fn();
     const onAlertAcknowledged = vi.fn();
     const onAlertResolved = vi.fn();
+    const onConnectionChange = vi.fn();
 
     const { result, unmount } = renderHook(() =>
-      useWebSocket({ enabled: true, onAlert, onAlertAcknowledged, onAlertResolved })
+      useWebSocket({ enabled: true, onAlert, onAlertAcknowledged, onAlertResolved, onConnectionChange })
     );
 
     expect(socketState.io).toHaveBeenCalledWith(
@@ -63,6 +64,7 @@ describe('useWebSocket', () => {
     });
 
     await waitFor(() => expect(result.current.isConnected).toBe(true));
+    expect(onConnectionChange).toHaveBeenCalledWith(true);
     expect(socketState.socket.emit).toHaveBeenCalledWith('subscribe:alerts');
     expect(socketState.socket.emit).toHaveBeenCalledWith('request:currentStatus');
 
@@ -95,8 +97,38 @@ describe('useWebSocket', () => {
       resolvedAt: alert.timestamp,
     });
     await waitFor(() => expect(result.current.isConnected).toBe(false));
+    expect(onConnectionChange).toHaveBeenCalledWith(false);
 
     unmount();
     expect(socketState.socket.disconnect).toHaveBeenCalled();
+  });
+
+  it('normalizes websocket URLs that already include /ws', () => {
+    expect(normalizeSocketBaseUrl('ws://localhost:3000/ws')).toBe('ws://localhost:3000');
+    expect(normalizeSocketBaseUrl('http://localhost/ws/')).toBe('http://localhost');
+    expect(normalizeSocketBaseUrl('http://localhost:3000')).toBe('http://localhost:3000');
+  });
+
+  it('does not recreate the socket when callback props change between renders', () => {
+    localStorage.setItem('authToken', 'token-123');
+
+    const { rerender, unmount } = renderHook(
+      ({ onConnectionChange }) => useWebSocket({ enabled: true, onConnectionChange }),
+      {
+        initialProps: {
+          onConnectionChange: vi.fn(),
+        },
+      }
+    );
+
+    expect(socketState.io).toHaveBeenCalledTimes(1);
+
+    rerender({ onConnectionChange: vi.fn() });
+
+    expect(socketState.io).toHaveBeenCalledTimes(1);
+    expect(socketState.socket.disconnect).not.toHaveBeenCalled();
+
+    unmount();
+    expect(socketState.socket.disconnect).toHaveBeenCalledTimes(1);
   });
 });

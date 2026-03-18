@@ -189,5 +189,6 @@ router.post('/change-password', authenticate, authController.changePassword);
  *                       $ref: '#/components/schemas/User'
  */
 router.get('/me', authenticate, authController.getCurrentUser);
+router.put('/me', authenticate, authController.updateCurrentUser);
 
 export default router;

@@ -34,6 +34,11 @@ export interface ChangePasswordDTO {
   newPassword: string;
 }
 
+export interface UpdateProfileDTO {
+  username: string;
+  email?: string;
+}
+
 // Token payload
 export interface TokenPayloadDTO {
   userId: string;
@@ -104,4 +109,25 @@ export function validateChangePasswordDTO(data: unknown): ChangePasswordDTO {
   }
 
   return { currentPassword, newPassword };
+}
+
+export function validateUpdateProfileDTO(data: unknown): UpdateProfileDTO {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Invalid request body');
+  }
+
+  const { username, email } = data as Record<string, unknown>;
+
+  if (!username || typeof username !== 'string' || username.trim().length < 3) {
+    throw new Error('Username must be at least 3 characters');
+  }
+
+  if (email !== undefined && typeof email !== 'string') {
+    throw new Error('Invalid email format');
+  }
+
+  return {
+    username: username.trim(),
+    email: email ? email.trim() : undefined,
+  };
 }

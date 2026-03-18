@@ -67,6 +67,7 @@ describe('useAlerts', () => {
 
     await waitFor(() => expect(result.current.alerts).toEqual([alert]));
 
+    expect(result.current.alertsTotal).toBe(1);
     expect(result.current.activeAlerts).toEqual([alert]);
     expect(result.current.thresholds).toEqual([threshold]);
   });

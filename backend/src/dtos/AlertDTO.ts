@@ -36,6 +36,7 @@ export interface AlertResponseDTO {
   id: string;
   server_id: string;
   server_name: string;
+  threshold_id?: string | null;
   message: string;
   severity: AlertSeverity;
   acknowledged: boolean;
@@ -48,7 +49,7 @@ export interface AlertResponseDTO {
 
 // Create threshold request
 export interface CreateThresholdDTO {
-  server_id?: string;
+  server_id?: string | null;
   metric_type: MetricType;
   threshold_value: number;
   severity?: ThresholdSeverity;
@@ -126,8 +127,12 @@ export function validateCreateThresholdDTO(data: unknown): CreateThresholdDTO {
     throw new Error(`Invalid severity. Must be one of: ${VALID_THRESHOLD_SEVERITIES.join(', ')}`);
   }
 
+  if (server_id !== undefined && server_id !== null && typeof server_id !== 'string') {
+    throw new Error('Server ID must be a string when provided');
+  }
+
   return {
-    server_id: server_id as string | undefined,
+    server_id: typeof server_id === 'string' && server_id.trim().length > 0 ? server_id.trim() : null,
     metric_type: metric_type as MetricType,
     threshold_value,
     severity: (severity as ThresholdSeverity) || 'warning',

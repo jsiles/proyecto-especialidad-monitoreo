@@ -10,6 +10,7 @@ const authServiceMock = vi.hoisted(() => ({
     verifyToken: vi.fn(),
     login: vi.fn(),
     logout: vi.fn(),
+    updateProfile: vi.fn(),
     hasRole: vi.fn(),
     isAdmin: vi.fn(),
   },
@@ -59,6 +60,7 @@ describe('AuthContext', () => {
     authServiceMock.authService.verifyToken.mockResolvedValue(false);
     authServiceMock.authService.login.mockResolvedValue({ user });
     authServiceMock.authService.logout.mockResolvedValue(undefined);
+    authServiceMock.authService.updateProfile.mockResolvedValue({ ...user, username: 'updated' });
     authServiceMock.authService.hasRole.mockImplementation((role: string) => role === 'ADMIN');
     authServiceMock.authService.isAdmin.mockReturnValue(true);
   });
@@ -89,7 +91,7 @@ describe('AuthContext', () => {
     expect(result.current.user).toBeNull();
   });
 
-  it('supports login, updateUser, role checks and logout', async () => {
+  it('supports login, updateUser, saveProfile, role checks and logout', async () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
@@ -108,6 +110,15 @@ describe('AuthContext', () => {
 
     expect(result.current.user?.username).toBe('updated');
     expect(localStorage.getItem('user')).toContain('updated');
+
+    await act(async () => {
+      await result.current.saveProfile({ username: 'updated', email: 'admin@test.com' });
+    });
+
+    expect(authServiceMock.authService.updateProfile).toHaveBeenCalledWith({
+      username: 'updated',
+      email: 'admin@test.com',
+    });
 
     await act(async () => {
       await result.current.logout();

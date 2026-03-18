@@ -96,6 +96,8 @@ export class MonitoringService {
         serverRepository.updateStatus(serverId, status);
       }
 
+      this.syncStatusAlerts(serverId, name, status);
+
       // Check thresholds and create alerts if needed
       await this.checkThresholds(serverId, name, { cpu, memory, disk });
 
@@ -156,6 +158,8 @@ export class MonitoringService {
     if (currentStatus !== status) {
       serverRepository.updateStatus(serverId, status);
     }
+
+    this.syncStatusAlerts(serverId, serverName, status);
 
     return {
       server_id: serverId,
@@ -337,6 +341,66 @@ export class MonitoringService {
             severity: threshold.severity === 'critical' ? 'critical' : 'warning',
           });
         }
+      }
+    }
+  }
+
+  private syncStatusAlerts(serverId: string, serverName: string, status: ServerStatus): void {
+    const activeAlerts = alertRepository.findAll({
+      server_id: serverId,
+      resolved: false,
+      limit: 100,
+    });
+
+    const offlineMessage = `Server ${serverName} is offline`;
+    const degradedMessage = `Server ${serverName} is degraded`;
+
+    const offlineAlert = activeAlerts.find(
+      (alert) => alert.threshold_id === null && alert.message === offlineMessage
+    );
+    const degradedAlert = activeAlerts.find(
+      (alert) => alert.threshold_id === null && alert.message === degradedMessage
+    );
+
+    if (status === 'online') {
+      if (offlineAlert) {
+        alertService.resolveAlert(offlineAlert.id);
+      }
+
+      if (degradedAlert) {
+        alertService.resolveAlert(degradedAlert.id);
+      }
+
+      return;
+    }
+
+    if (status === 'offline') {
+      if (degradedAlert) {
+        alertService.resolveAlert(degradedAlert.id);
+      }
+
+      if (!offlineAlert) {
+        alertService.createAlert({
+          server_id: serverId,
+          message: offlineMessage,
+          severity: 'critical',
+        });
+      }
+
+      return;
+    }
+
+    if (status === 'degraded') {
+      if (offlineAlert) {
+        alertService.resolveAlert(offlineAlert.id);
+      }
+
+      if (!degradedAlert) {
+        alertService.createAlert({
+          server_id: serverId,
+          message: degradedMessage,
+          severity: 'warning',
+        });
       }
     }
   }

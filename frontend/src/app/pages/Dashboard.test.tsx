@@ -6,6 +6,7 @@ const metrics = [
   {
     server_id: 'srv-1',
     timestamp: '2026-03-16T00:00:00.000Z',
+    status: 'offline',
     cpu: 45,
     memory: 62,
     disk: 55,
@@ -147,6 +148,12 @@ describe('Dashboard page', () => {
 
     expect(screen.getByText('Active Alerts')).toBeInTheDocument();
     expect(screen.getByText('CPU high on srv-1')).toBeInTheDocument();
+  });
+
+  it('uses live metric status in monitored servers', () => {
+    render(<Dashboard />);
+
+    expect(screen.getByText(/10.0.0.10 • application • offline/i)).toBeInTheDocument();
   });
 
   it('renders grafana embed section', () => {

@@ -501,6 +501,7 @@ export function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {servers.map((server) => {
                   const serverMetric = metrics.find(m => m.server_id === server.id);
+                  const liveStatus = serverMetric?.status ?? server.status ?? 'unknown';
                   return (
                     <div key={server.id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
                       <div className="flex items-center justify-between mb-2">
@@ -509,12 +510,12 @@ export function Dashboard() {
                           <span className="font-medium text-gray-700">{server.name}</span>
                         </div>
                         <span className={`w-2 h-2 rounded-full ${
-                          server.status === 'online' ? 'bg-green-500' : 
-                          server.status === 'offline' ? 'bg-red-500' : 'bg-yellow-500'
+                          liveStatus === 'online' ? 'bg-green-500' : 
+                          liveStatus === 'offline' ? 'bg-red-500' : 'bg-yellow-500'
                         }`}></span>
                       </div>
                       <div className="text-xs text-gray-500 mb-3">
-                        {server.ip_address} • {server.type}
+                        {server.ip_address} • {server.type} • {liveStatus}
                       </div>
                       {renderServerMetrics(server, serverMetric)}
                     </div>

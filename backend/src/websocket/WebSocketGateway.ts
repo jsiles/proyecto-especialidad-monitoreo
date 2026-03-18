@@ -5,6 +5,7 @@
 
 import { Server as HTTPServer } from 'http';
 import { Server, Socket } from 'socket.io';
+import { createSocketCorsOptions } from '../config/cors';
 import { logger } from '../utils/logger';
 import { verifyToken } from '../utils/jwtUtils';
 
@@ -60,11 +61,7 @@ export class WebSocketGateway {
 
   constructor(httpServer: HTTPServer) {
     this.io = new Server(httpServer, {
-      cors: {
-        origin: process.env.CORS_ORIGIN || '*',
-        methods: ['GET', 'POST'],
-        credentials: true,
-      },
+      cors: createSocketCorsOptions(),
       path: '/ws',
       transports: ['websocket', 'polling'],
     });

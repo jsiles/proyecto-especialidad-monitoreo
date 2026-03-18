@@ -322,6 +322,16 @@ describe('validateCreateThresholdDTO', () => {
     expect(dto.enabled).toBe(true);
   });
 
+  it('normalizes missing or empty server_id to null for global thresholds', () => {
+    expect(
+      validateCreateThresholdDTO({ metric_type: 'cpu', threshold_value: 80 }).server_id
+    ).toBeNull();
+
+    expect(
+      validateCreateThresholdDTO({ server_id: '', metric_type: 'cpu', threshold_value: 80 }).server_id
+    ).toBeNull();
+  });
+
   it('throws when body is not an object', () => {
     expect(() => validateCreateThresholdDTO(null)).toThrow();
   });

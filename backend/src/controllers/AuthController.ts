@@ -5,7 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { authService } from '../services/AuthService';
-import { validateLoginDTO, validateRegisterDTO, validateChangePasswordDTO } from '../dtos/AuthDTO';
+import { validateLoginDTO, validateRegisterDTO, validateChangePasswordDTO, validateUpdateProfileDTO } from '../dtos/AuthDTO';
 
 export class AuthController {
   /**
@@ -125,6 +125,25 @@ export class AuthController {
     try {
       const user = authService.getProfile(req.user!.userId);
       
+      res.json({
+        success: true,
+        data: { user },
+        meta: { timestamp: new Date().toISOString() },
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  /**
+   * Update current user info
+   * PUT /api/auth/me
+   */
+  public updateCurrentUser = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const updateData = validateUpdateProfileDTO(req.body);
+      const user = authService.updateProfile(req.user!.userId, updateData, req.ip);
+
       res.json({
         success: true,
         data: { user },

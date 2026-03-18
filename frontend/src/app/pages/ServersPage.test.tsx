@@ -136,6 +136,19 @@ describe('ServersPage', () => {
 
     await waitFor(() => {
       expect(mockDeleteServer).toHaveBeenCalledWith('srv-1');
+      expect(mockRefreshServers).toHaveBeenCalled();
     });
+  });
+
+  it('shows an error when deleteServer returns false', async () => {
+    const user = userEvent.setup();
+    mockDeleteServer.mockResolvedValue(false);
+    render(<ServersPage />);
+
+    const deleteBtn = document.querySelector('button.text-red-600') as HTMLButtonElement;
+    expect(deleteBtn).toBeTruthy();
+    await user.click(deleteBtn);
+
+    expect(await screen.findByText('Server could not be deleted')).toBeInTheDocument();
   });
 });

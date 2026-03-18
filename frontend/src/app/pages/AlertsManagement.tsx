@@ -11,11 +11,14 @@ import { getErrorMessage } from "../../services/api";
 export function AlertsManagement() {
   const { 
     alerts, 
+    alertsTotal,
     activeAlerts, 
     thresholds, 
     loading, 
     fetchAlerts,
+    fetchActiveAlerts,
     fetchThresholds,
+    refreshAll,
     acknowledgeAlert,
     resolveAlert,
     createThreshold,
@@ -49,18 +52,20 @@ export function AlertsManagement() {
   // Función para crear threshold
   const handleCreateThreshold = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!newThreshold.server_id) {
-      setError("Please select a server");
-      return;
-    }
 
     setCreating(true);
     setError("");
     setSuccess("");
 
     try {
-      await createThreshold(newThreshold);
+      const createdThreshold = await createThreshold({
+        ...newThreshold,
+        server_id: newThreshold.server_id || null,
+      });
+      if (!createdThreshold) {
+        setError("Threshold could not be created");
+        return;
+      }
       setSuccess("Threshold created successfully!");
       setNewThreshold({
         server_id: "",
@@ -68,7 +73,7 @@ export function AlertsManagement() {
         threshold_value: 80,
         severity: "warning",
       });
-      fetchThresholds();
+      await fetchThresholds();
     } catch (err) {
       setError(getErrorMessage(err));
     } finally {
@@ -81,8 +86,13 @@ export function AlertsManagement() {
     if (!confirm("Are you sure you want to delete this threshold?")) return;
 
     try {
-      await deleteThreshold(id);
+      const deleted = await deleteThreshold(id);
+      if (!deleted) {
+        setError("Threshold could not be deleted");
+        return;
+      }
       setSuccess("Threshold deleted successfully!");
+      await fetchThresholds();
     } catch (err) {
       setError(getErrorMessage(err));
     }
@@ -93,7 +103,7 @@ export function AlertsManagement() {
     try {
       await acknowledgeAlert(id);
       setSuccess("Alert acknowledged!");
-      fetchAlerts();
+      await Promise.all([fetchAlerts(), fetchActiveAlerts()]);
     } catch (err) {
       setError(getErrorMessage(err));
     }
@@ -104,7 +114,7 @@ export function AlertsManagement() {
     try {
       await resolveAlert(id);
       setSuccess("Alert resolved!");
-      fetchAlerts();
+      await Promise.all([fetchAlerts(), fetchActiveAlerts()]);
     } catch (err) {
       setError(getErrorMessage(err));
     }
@@ -138,10 +148,7 @@ export function AlertsManagement() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl text-gray-700">Alerts Management</h1>
         <Button
-          onClick={() => {
-            fetchAlerts();
-            fetchThresholds();
-          }}
+          onClick={() => void refreshAll()}
           disabled={loading}
           className="flex items-center gap-2"
         >
@@ -171,7 +178,7 @@ export function AlertsManagement() {
           <Tabs defaultValue="active" className="w-full">
             <TabsList className="mb-6">
               <TabsTrigger value="active">Active Alerts ({activeAlerts.length})</TabsTrigger>
-              <TabsTrigger value="history">All Alerts ({alerts.length})</TabsTrigger>
+              <TabsTrigger value="history">All Alerts ({alertsTotal})</TabsTrigger>
               <TabsTrigger value="thresholds">Thresholds ({thresholds.length})</TabsTrigger>
             </TabsList>
 
@@ -305,19 +312,21 @@ export function AlertsManagement() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Server
+                        Server scope
                       </label>
                       <select
                         value={newThreshold.server_id}
                         onChange={(e) => setNewThreshold({...newThreshold, server_id: e.target.value})}
                         className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                        required
                       >
-                        <option value="">Select server...</option>
+                        <option value="">All servers</option>
                         {servers.map((server) => (
                           <option key={server.id} value={server.id}>{server.name}</option>
                         ))}
                       </select>
+                      <p className="mt-1 text-xs text-gray-500">
+                        Leave as <span className="font-medium">All servers</span> to create a global threshold.
+                      </p>
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -392,13 +401,14 @@ export function AlertsManagement() {
                               {getMetricLabel(threshold.metric_type)}
                             </div>
                             <div className="text-sm text-gray-500">
-                              Server ID: {threshold.server_id}
+                              Server: {threshold.server_name || threshold.server_id || 'All servers'}
                             </div>
                           </div>
                           <Button
                             size="sm"
                             variant="ghost"
                             onClick={() => handleDeleteThreshold(threshold.id)}
+                            aria-label={`Delete threshold ${threshold.id}`}
                             className="text-red-500 hover:text-red-700 hover:bg-red-50"
                           >
                             <Trash2 className="w-4 h-4" />

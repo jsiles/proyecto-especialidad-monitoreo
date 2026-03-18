@@ -27,6 +27,7 @@ vi.mock('sonner', () => ({
 describe('RealtimeAlertsBridge', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    window.__monitoringRealtimeConnected = undefined;
     deps.useAuth.mockReturnValue({ isAuthenticated: true });
   });
 
@@ -55,11 +56,18 @@ describe('RealtimeAlertsBridge', () => {
       acknowledged: false,
     };
 
+    options.onConnectionChange(true);
     options.onAlert(alert);
     options.onAlertAcknowledged({ alertId: 'a1', acknowledgedBy: 'admin', timestamp: alert.timestamp });
     options.onAlertResolved({ alertId: 'a1', resolvedAt: alert.timestamp });
 
-    expect(dispatchSpy).toHaveBeenCalledTimes(3);
+    expect(dispatchSpy).toHaveBeenCalledTimes(4);
+    expect(window.__monitoringRealtimeConnected).toBe(true);
+    expect(dispatchSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'monitoring:websocket-status',
+      })
+    );
     expect(deps.toast.error).toHaveBeenCalledWith('server-1: CPU high');
   });
 

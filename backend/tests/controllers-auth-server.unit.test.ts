@@ -12,6 +12,7 @@ jest.mock('../src/services/AuthService', () => ({
     logout: jest.fn(),
     changePassword: jest.fn(),
     getProfile: jest.fn(),
+    updateProfile: jest.fn(),
   },
 }));
 
@@ -19,6 +20,7 @@ jest.mock('../src/dtos/AuthDTO', () => ({
   validateLoginDTO: jest.fn((body) => body),
   validateRegisterDTO: jest.fn((body) => body),
   validateChangePasswordDTO: jest.fn((body) => body),
+  validateUpdateProfileDTO: jest.fn((body) => body),
 }));
 
 jest.mock('../src/services/ServerService', () => ({
@@ -51,7 +53,7 @@ import { ServerController } from '../src/controllers/ServerController';
 import { authService } from '../src/services/AuthService';
 import { serverService } from '../src/services/ServerService';
 import { monitoringService } from '../src/services/MonitoringService';
-import { validateLoginDTO, validateRegisterDTO, validateChangePasswordDTO } from '../src/dtos/AuthDTO';
+import { validateLoginDTO, validateRegisterDTO, validateChangePasswordDTO, validateUpdateProfileDTO } from '../src/dtos/AuthDTO';
 import { validateCreateServerDTO, validateUpdateServerDTO } from '../src/dtos/ServerDTO';
 
 const mockAuth = authService as jest.Mocked<typeof authService>;
@@ -254,6 +256,28 @@ describe('AuthController (unit)', () => {
       mockAuth.getProfile.mockImplementationOnce(() => { throw new Error('not found'); });
 
       await ctrl.getCurrentUser(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+  });
+
+  describe('updateCurrentUser', () => {
+    it('returns updated user profile', async () => {
+      const { req, res, next } = makeMocks({ body: { username: 'updated', email: 'updated@test.com' } });
+      mockAuth.updateProfile.mockReturnValue({ id: 'user-1', username: 'updated' } as any);
+
+      await ctrl.updateCurrentUser(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, data: { user: expect.objectContaining({ username: 'updated' }) } })
+      );
+    });
+
+    it('calls next when profile validation throws', async () => {
+      const { req, res, next } = makeMocks({ body: {} });
+      (validateUpdateProfileDTO as jest.Mock).mockImplementationOnce(() => { throw new Error('bad'); });
+
+      await ctrl.updateCurrentUser(req, res, next);
 
       expect(next).toHaveBeenCalled();
     });

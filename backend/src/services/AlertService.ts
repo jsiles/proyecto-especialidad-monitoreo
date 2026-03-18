@@ -37,7 +37,14 @@ export class AlertService {
       offset: query?.offset || 0,
     });
 
-    const total = alerts.length; // TODO: Add count method to repository
+    const total = alertRepository.countAll({
+      server_id: query?.server_id,
+      severity: query?.severity,
+      acknowledged: query?.acknowledged,
+      resolved: query?.resolved,
+      from_date: query?.from_date,
+      to_date: query?.to_date,
+    });
 
     return {
       alerts: alerts.map(this.toAlertResponseDTO),
@@ -58,7 +65,9 @@ export class AlertService {
 
     return alerts
       .filter((alert) => {
-        const key = `${alert.server_id}:${alert.severity}:${alert.message.toLowerCase()}`;
+        const key = alert.threshold_id
+          ? `threshold:${alert.server_id}:${alert.threshold_id}:${alert.severity}`
+          : `message:${alert.server_id}:${alert.severity}:${alert.message.toLowerCase()}`;
         if (seen.has(key)) {
           return false;
         }
@@ -145,7 +154,31 @@ export class AlertService {
       throw new BadRequestError('Alert is already resolved');
     }
 
-    const updated = alertRepository.resolve(id);
+    const relatedActiveAlerts = alertRepository.findAll({
+      server_id: alert.server_id,
+      resolved: false,
+      limit: 100,
+    });
+
+    const relatedAlertsToResolve = relatedActiveAlerts.filter((candidate) => {
+      if (candidate.id === id) {
+        return true;
+      }
+
+      if (alert.threshold_id) {
+        return candidate.threshold_id === alert.threshold_id;
+      }
+
+      return (
+        candidate.threshold_id === null &&
+        candidate.severity === alert.severity &&
+        candidate.message === alert.message
+      );
+    });
+
+    for (const relatedAlert of relatedAlertsToResolve) {
+      alertRepository.resolve(relatedAlert.id);
+    }
 
     // Log resolution
     if (userId) {
@@ -158,9 +191,14 @@ export class AlertService {
 
     logger.info('Alert resolved', { alertId: id });
 
-    const alertWithDetails = alertRepository.findByIdWithDetails(updated!.id)!;
+    const alertWithDetails = alertRepository.findByIdWithDetails(id)!;
     const response = this.toAlertResponseDTO(alertWithDetails);
-    notificationService.emitAlertResolved(response);
+    relatedAlertsToResolve.forEach((relatedAlert) => {
+      const resolvedAlert = alertRepository.findByIdWithDetails(relatedAlert.id);
+      if (resolvedAlert) {
+        notificationService.emitAlertResolved(this.toAlertResponseDTO(resolvedAlert));
+      }
+    });
     return response;
   }
 
@@ -179,7 +217,7 @@ export class AlertService {
   public getThresholds(serverId?: string): ThresholdResponseDTO[] {
     const thresholds = serverId 
       ? thresholdRepository.findByServer(serverId)
-      : thresholdRepository.findAll({ enabled: undefined });
+      : thresholdRepository.findAll({ enabled: true });
     return thresholds.map(this.toThresholdResponseDTO);
   }
 
@@ -263,7 +301,7 @@ export class AlertService {
       throw new NotFoundError(`Threshold with ID ${id} not found`);
     }
 
-    thresholdRepository.delete(id);
+    thresholdRepository.update(id, { enabled: false });
 
     // Log deletion
     if (userId) {
@@ -302,6 +340,7 @@ export class AlertService {
       id: alert.id,
       server_id: alert.server_id,
       server_name: alert.server_name,
+      threshold_id: alert.threshold_id,
       message: alert.message,
       severity: alert.severity,
       acknowledged: alert.acknowledged,

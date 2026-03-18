@@ -576,11 +576,28 @@ export class ReportService {
     return totalAvailability / servers.length;
   }
 
-  private calculateServerAvailability(alerts: AlertWithDetails[], _options: ReportGenerationOptions): number {
-    // Simplified calculation: assume each unresolved alert represents 0.5% downtime
-    const unresolvedCount = alerts.filter((a: AlertWithDetails) => !a.resolved).length;
-    const downtime = Math.min(unresolvedCount * 0.5, 20); // Cap at 20%
-    return Math.max(80, 100 - downtime);
+  private calculateServerAvailability(alerts: AlertWithDetails[], options: ReportGenerationOptions): number {
+    const { from, to } = this.getReportPeriodBounds(options);
+    const totalPeriodMs = to.getTime() - from.getTime();
+
+    if (totalPeriodMs <= 0) {
+      return 100;
+    }
+
+    const downtimeIntervals = alerts
+      .filter((alert: AlertWithDetails) => alert.severity !== 'info')
+      .map((alert: AlertWithDetails) => this.getAlertImpactInterval(alert, from, to))
+      .filter((interval): interval is { start: number; end: number } => interval !== null);
+
+    if (downtimeIntervals.length === 0) {
+      return 100;
+    }
+
+    const mergedIntervals = this.mergeIntervals(downtimeIntervals);
+    const downtimeMs = mergedIntervals.reduce((total, interval) => total + (interval.end - interval.start), 0);
+    const availability = 100 - (downtimeMs / totalPeriodMs) * 100;
+
+    return Math.max(0, Math.min(100, availability));
   }
 
   private calculateMTTR(alerts: AlertWithDetails[]): number {
@@ -617,6 +634,48 @@ export class ReportService {
     }
 
     return totalHours / (sortedAlerts.length - 1);
+  }
+
+  private getReportPeriodBounds(options: ReportGenerationOptions): { from: Date; to: Date } {
+    return {
+      from: new Date(options.from_date),
+      to: new Date(options.to_date),
+    };
+  }
+
+  private getAlertImpactInterval(
+    alert: AlertWithDetails,
+    periodStart: Date,
+    periodEnd: Date
+  ): { start: number; end: number } | null {
+    const alertStart = new Date(alert.created_at).getTime();
+    const alertEnd = new Date(alert.resolved_at || periodEnd.toISOString()).getTime();
+    const start = Math.max(alertStart, periodStart.getTime());
+    const end = Math.min(alertEnd, periodEnd.getTime());
+
+    if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
+      return null;
+    }
+
+    return { start, end };
+  }
+
+  private mergeIntervals(intervals: Array<{ start: number; end: number }>): Array<{ start: number; end: number }> {
+    const sorted = [...intervals].sort((left, right) => left.start - right.start);
+    const merged: Array<{ start: number; end: number }> = [];
+
+    for (const interval of sorted) {
+      const last = merged[merged.length - 1];
+
+      if (!last || interval.start > last.end) {
+        merged.push({ ...interval });
+        continue;
+      }
+
+      last.end = Math.max(last.end, interval.end);
+    }
+
+    return merged;
   }
 }
 

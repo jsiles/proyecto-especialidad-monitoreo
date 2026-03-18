@@ -113,6 +113,23 @@ describe('authService', () => {
     await expect(authService.getCurrentUser()).resolves.toEqual(user);
   });
 
+  it('updates the current user profile and persists it', async () => {
+    const updatedUser = { ...user, username: 'updated' };
+    mockedApi.put.mockResolvedValue({
+      data: { success: true, data: { user: updatedUser } },
+    });
+
+    await expect(
+      authService.updateProfile({ username: 'updated', email: 'admin@test.com' })
+    ).resolves.toEqual(updatedUser);
+
+    expect(mockedApi.put).toHaveBeenCalledWith('/auth/me', {
+      username: 'updated',
+      email: 'admin@test.com',
+    });
+    expect(localStorage.getItem('user')).toBe(JSON.stringify(updatedUser));
+  });
+
   it('returns the stored user when JSON is valid', () => {
     localStorage.setItem('user', JSON.stringify(user));
 

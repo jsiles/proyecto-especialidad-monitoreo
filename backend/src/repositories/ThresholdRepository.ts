@@ -203,7 +203,7 @@ export class ThresholdRepository {
    */
   public exists(serverId: string | null, metricType: MetricType, severity: string): boolean {
     const db = getDatabase();
-    let query = 'SELECT 1 FROM alert_thresholds WHERE metric_type = ? AND severity = ?';
+    let query = 'SELECT 1 FROM alert_thresholds WHERE metric_type = ? AND severity = ? AND enabled = 1';
     const params: (string | null)[] = [metricType, severity];
 
     if (serverId) {
@@ -223,7 +223,7 @@ export class ThresholdRepository {
   public getDefaultThresholds(): CreateThresholdInput[] {
     return [
       { metric_type: 'cpu', threshold_value: 80, severity: 'warning' },
-      { metric_type: 'cpu', threshold_value: 95, severity: 'critical' },
+      { metric_type: 'cpu', threshold_value: 90, severity: 'critical' },
       { metric_type: 'memory', threshold_value: 85, severity: 'warning' },
       { metric_type: 'memory', threshold_value: 95, severity: 'critical' },
       { metric_type: 'disk', threshold_value: 80, severity: 'warning' },

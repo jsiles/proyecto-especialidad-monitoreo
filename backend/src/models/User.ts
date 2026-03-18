@@ -47,6 +47,7 @@ export interface CreateUserInput {
 
 // Type for updating a user
 export interface UpdateUserInput {
+  username?: string;
   email?: string;
   password?: string;
   roles?: string[];

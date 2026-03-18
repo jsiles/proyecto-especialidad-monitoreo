@@ -7,7 +7,7 @@ import { userRepository } from '../repositories/UserRepository';
 import { auditLogRepository } from '../repositories/AuditLogRepository';
 import { hashPassword, comparePassword } from '../utils/passwordHasher';
 import { generateToken, verifyToken } from '../utils/jwtUtils';
-import { LoginDTO, RegisterDTO, AuthResponseDTO, ChangePasswordDTO, TokenPayloadDTO } from '../dtos/AuthDTO';
+import { LoginDTO, RegisterDTO, AuthResponseDTO, ChangePasswordDTO, TokenPayloadDTO, UpdateProfileDTO } from '../dtos/AuthDTO';
 import { SafeUser } from '../models/User';
 import { logger } from '../utils/logger';
 import { UnauthorizedError, BadRequestError, ConflictError } from '../middlewares/errorHandler';
@@ -170,6 +170,47 @@ export class AuthService {
     });
 
     logger.info('Password changed', { userId });
+  }
+
+  /**
+   * Update current user profile
+   */
+  public updateProfile(
+    userId: string,
+    data: UpdateProfileDTO,
+    ipAddress?: string
+  ): SafeUser {
+    const user = userRepository.findById(userId);
+    if (!user) {
+      throw new BadRequestError('User not found');
+    }
+
+    if (data.username !== user.username && userRepository.usernameExists(data.username)) {
+      throw new ConflictError('Username already exists');
+    }
+
+    if (data.email && data.email !== user.email) {
+      const existingByEmail = userRepository.findByEmail(data.email);
+      if (existingByEmail && existingByEmail.id !== userId) {
+        throw new ConflictError('Email already in use');
+      }
+    }
+
+    const updatedUser = userRepository.update(userId, {
+      username: data.username,
+      email: data.email,
+    });
+
+    auditLogRepository.create({
+      user_id: userId,
+      action: 'PROFILE_UPDATED',
+      details: { username: data.username, email: data.email || null },
+      ip_address: ipAddress,
+    });
+
+    logger.info('User profile updated', { userId });
+
+    return userRepository.toSafeUser(updatedUser!);
   }
 
   /**

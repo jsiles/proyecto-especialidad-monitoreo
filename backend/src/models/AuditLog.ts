@@ -18,6 +18,7 @@ export type AuditAction =
   | 'LOGIN_FAILED'
   | 'USER_CREATED'
   | 'USER_UPDATED'
+  | 'PROFILE_UPDATED'
   | 'USER_DELETED'
   | 'SERVER_CREATED'
   | 'SERVER_UPDATED'

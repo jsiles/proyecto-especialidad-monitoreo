@@ -10,6 +10,7 @@ import morgan from 'morgan';
 import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 
+import { createCorsOptions } from './config/cors';
 import { errorHandler } from './middlewares/errorHandler';
 import { requestLogger } from './middlewares/requestLogger';
 import routes from './routes';
@@ -32,12 +33,7 @@ app.use(helmet({
 }));
 
 // ==================== CORS CONFIGURATION ====================
-app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
-}));
+app.use(cors(createCorsOptions()));
 
 // ==================== PARSING MIDDLEWARE ====================
 app.use(express.json({ limit: '10mb' }));

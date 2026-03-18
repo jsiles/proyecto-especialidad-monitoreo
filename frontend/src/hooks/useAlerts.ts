@@ -3,7 +3,7 @@
  * Hook personalizado para gestión de alertas
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import alertsService, {
   Alert,
   AlertThreshold,
@@ -14,6 +14,7 @@ import { getErrorMessage } from '../services/api';
 
 interface UseAlertsReturn {
   alerts: Alert[];
+  alertsTotal: number;
   activeAlerts: Alert[];
   thresholds: AlertThreshold[];
   loading: boolean;
@@ -21,6 +22,7 @@ interface UseAlertsReturn {
   fetchAlerts: () => Promise<void>;
   fetchActiveAlerts: () => Promise<void>;
   fetchThresholds: () => Promise<void>;
+  refreshAll: () => Promise<void>;
   acknowledgeAlert: (id: string) => Promise<boolean>;
   resolveAlert: (id: string) => Promise<boolean>;
   createThreshold: (data: CreateThresholdData) => Promise<AlertThreshold | null>;
@@ -32,29 +34,43 @@ export function useAlerts(
   refreshInterval?: number
 ): UseAlertsReturn {
   const [alerts, setAlerts] = useState<Alert[]>([]);
+  const [alertsTotal, setAlertsTotal] = useState(0);
   const [activeAlerts, setActiveAlerts] = useState<Alert[]>([]);
   const [thresholds, setThresholds] = useState<AlertThreshold[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const pendingRequestsRef = useRef(0);
+
+  const beginRequest = useCallback(() => {
+    pendingRequestsRef.current += 1;
+    setLoading(true);
+  }, []);
+
+  const endRequest = useCallback(() => {
+    pendingRequestsRef.current = Math.max(0, pendingRequestsRef.current - 1);
+    setLoading(pendingRequestsRef.current > 0);
+  }, []);
 
   // Fetch all alerts
   const fetchAlerts = useCallback(async () => {
-    setLoading(true);
+    beginRequest();
     setError(null);
     try {
       const response = await alertsService.getAll();
       setAlerts(response.alerts);
+      setAlertsTotal(response.total);
     } catch (err) {
       const message = getErrorMessage(err);
       setError(message);
       console.error('Error fetching alerts:', message);
     } finally {
-      setLoading(false);
+      endRequest();
     }
-  }, []);
+  }, [beginRequest, endRequest]);
 
   // Fetch active alerts
   const fetchActiveAlerts = useCallback(async () => {
+    beginRequest();
     setError(null);
     try {
       const data = await alertsService.getActive();
@@ -63,11 +79,14 @@ export function useAlerts(
       const message = getErrorMessage(err);
       setError(message);
       console.error('Error fetching active alerts:', message);
+    } finally {
+      endRequest();
     }
-  }, []);
+  }, [beginRequest, endRequest]);
 
   // Fetch thresholds
   const fetchThresholds = useCallback(async () => {
+    beginRequest();
     setError(null);
     try {
       const data = await alertsService.getThresholds();
@@ -76,8 +95,19 @@ export function useAlerts(
       const message = getErrorMessage(err);
       setError(message);
       console.error('Error fetching thresholds:', message);
+    } finally {
+      endRequest();
     }
-  }, []);
+  }, [beginRequest, endRequest]);
+
+  const refreshAll = useCallback(async () => {
+    setError(null);
+    await Promise.all([
+      fetchAlerts(),
+      fetchActiveAlerts(),
+      fetchThresholds(),
+    ]);
+  }, [fetchAlerts, fetchActiveAlerts, fetchThresholds]);
 
   // Acknowledge alert
   const acknowledgeAlert = useCallback(async (id: string): Promise<boolean> => {
@@ -153,11 +183,9 @@ export function useAlerts(
   // Auto-fetch on mount
   useEffect(() => {
     if (autoFetch) {
-      fetchAlerts();
-      fetchActiveAlerts();
-      fetchThresholds();
+      void refreshAll();
     }
-  }, [autoFetch, fetchAlerts, fetchActiveAlerts, fetchThresholds]);
+  }, [autoFetch, refreshAll]);
 
   // Auto-refresh interval for active alerts
   useEffect(() => {
@@ -186,6 +214,7 @@ export function useAlerts(
 
       setActiveAlerts((prev) => [incoming, ...prev.filter((alert) => alert.id !== incoming.id)]);
       setAlerts((prev) => [incoming, ...prev.filter((alert) => alert.id !== incoming.id)]);
+      setAlertsTotal((prev) => prev + 1);
     };
 
     const handleAlertAcknowledged = (event: Event) => {
@@ -225,6 +254,7 @@ export function useAlerts(
 
   return {
     alerts,
+    alertsTotal,
     activeAlerts,
     thresholds,
     loading,
@@ -232,6 +262,7 @@ export function useAlerts(
     fetchAlerts,
     fetchActiveAlerts,
     fetchThresholds,
+    refreshAll,
     acknowledgeAlert,
     resolveAlert,
     createThreshold,

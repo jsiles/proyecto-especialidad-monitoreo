@@ -10,7 +10,7 @@ import {
   useEffect,
   ReactNode,
 } from 'react';
-import { authService, User, LoginCredentials } from '../services/authService';
+import { authService, User, LoginCredentials, UpdateProfileData } from '../services/authService';
 
 // ==================== TYPES ====================
 
@@ -21,6 +21,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (user: User) => void;
+  saveProfile: (data: UpdateProfileData) => Promise<User>;
   hasRole: (role: string) => boolean;
   isAdmin: () => boolean;
 }
@@ -94,6 +95,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
+  const saveProfile = async (data: UpdateProfileData): Promise<User> => {
+    const updatedUser = await authService.updateProfile(data);
+    updateUser(updatedUser);
+    return updatedUser;
+  };
+
   // Verificar rol
   const hasRole = (role: string): boolean => {
     return authService.hasRole(role);
@@ -111,6 +118,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     login,
     logout,
     updateUser,
+    saveProfile,
     hasRole,
     isAdmin,
   };

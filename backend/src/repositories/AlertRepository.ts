@@ -9,6 +9,50 @@ import { Alert, AlertWithDetails, CreateAlertInput, AlertSeverity } from '../mod
 import { logger } from '../utils/logger';
 
 export class AlertRepository {
+  private buildWhereClause(options?: {
+    server_id?: string;
+    severity?: AlertSeverity;
+    acknowledged?: boolean;
+    resolved?: boolean;
+    from_date?: string;
+    to_date?: string;
+  }): { whereClause: string; params: (string | number)[] } {
+    let whereClause = ' WHERE 1=1';
+    const params: (string | number)[] = [];
+
+    if (options?.server_id) {
+      whereClause += ' AND a.server_id = ?';
+      params.push(options.server_id);
+    }
+
+    if (options?.severity) {
+      whereClause += ' AND a.severity = ?';
+      params.push(options.severity);
+    }
+
+    if (options?.acknowledged !== undefined) {
+      whereClause += ' AND a.acknowledged = ?';
+      params.push(options.acknowledged ? 1 : 0);
+    }
+
+    if (options?.resolved !== undefined) {
+      whereClause += ' AND a.resolved = ?';
+      params.push(options.resolved ? 1 : 0);
+    }
+
+    if (options?.from_date) {
+      whereClause += ' AND a.created_at >= ?';
+      params.push(options.from_date);
+    }
+
+    if (options?.to_date) {
+      whereClause += ' AND a.created_at <= ?';
+      params.push(options.to_date);
+    }
+
+    return { whereClause, params };
+  }
+
   /**
    * Find alert by ID
    */
@@ -54,6 +98,7 @@ export class AlertRepository {
     offset?: number;
   }): AlertWithDetails[] {
     const db = getDatabase();
+    const { whereClause, params } = this.buildWhereClause(options);
 
     let query = `
       SELECT 
@@ -61,39 +106,8 @@ export class AlertRepository {
         s.name as server_name
       FROM alerts a
       LEFT JOIN servers s ON a.server_id = s.id
-      WHERE 1=1
     `;
-    const params: (string | number)[] = [];
-
-    if (options?.server_id) {
-      query += ' AND a.server_id = ?';
-      params.push(options.server_id);
-    }
-
-    if (options?.severity) {
-      query += ' AND a.severity = ?';
-      params.push(options.severity);
-    }
-
-    if (options?.acknowledged !== undefined) {
-      query += ' AND a.acknowledged = ?';
-      params.push(options.acknowledged ? 1 : 0);
-    }
-
-    if (options?.resolved !== undefined) {
-      query += ' AND a.resolved = ?';
-      params.push(options.resolved ? 1 : 0);
-    }
-
-    if (options?.from_date) {
-      query += ' AND a.created_at >= ?';
-      params.push(options.from_date);
-    }
-
-    if (options?.to_date) {
-      query += ' AND a.created_at <= ?';
-      params.push(options.to_date);
-    }
+    query += whereClause;
 
     query += ' ORDER BY a.created_at DESC';
 
@@ -114,6 +128,29 @@ export class AlertRepository {
       acknowledged: Boolean(r.acknowledged),
       resolved: Boolean(r.resolved),
     }));
+  }
+
+  /**
+   * Count all alerts with filters
+   */
+  public countAll(options?: {
+    server_id?: string;
+    severity?: AlertSeverity;
+    acknowledged?: boolean;
+    resolved?: boolean;
+    from_date?: string;
+    to_date?: string;
+  }): number {
+    const db = getDatabase();
+    const { whereClause, params } = this.buildWhereClause(options);
+
+    const result = db.prepare(`
+      SELECT COUNT(*) as count
+      FROM alerts a
+      ${whereClause}
+    `).get(...params) as { count: number };
+
+    return result.count;
   }
 
   /**
@@ -216,6 +253,15 @@ export class AlertRepository {
     const db = getDatabase();
     const result = db.prepare('DELETE FROM alerts WHERE id = ?').run(id);
     return result.changes > 0;
+  }
+
+  /**
+   * Delete all alerts for a server
+   */
+  public deleteByServer(serverId: string): number {
+    const db = getDatabase();
+    const result = db.prepare('DELETE FROM alerts WHERE server_id = ?').run(serverId);
+    return result.changes;
   }
 
   /**

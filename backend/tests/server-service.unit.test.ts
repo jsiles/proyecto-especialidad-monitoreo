@@ -20,6 +20,12 @@ jest.mock('../src/repositories/ServerRepository', () => ({
   },
 }));
 
+jest.mock('../src/repositories/AlertRepository', () => ({
+  alertRepository: {
+    deleteByServer: jest.fn(),
+  },
+}));
+
 jest.mock('../src/repositories/AuditLogRepository', () => ({
   auditLogRepository: { create: jest.fn() },
 }));
@@ -28,8 +34,10 @@ jest.mock('../src/repositories/AuditLogRepository', () => ({
 
 import { ServerService } from '../src/services/ServerService';
 import { serverRepository } from '../src/repositories/ServerRepository';
+import { alertRepository } from '../src/repositories/AlertRepository';
 
 const mockRepo = serverRepository as jest.Mocked<typeof serverRepository>;
+const mockAlertRepo = alertRepository as jest.Mocked<typeof alertRepository>;
 
 // ─── Fixture ──────────────────────────────────────────────────────────────────
 
@@ -186,8 +194,10 @@ describe('ServerService (unit)', () => {
   describe('delete', () => {
     it('deletes server when it exists', () => {
       mockRepo.findById.mockReturnValue(makeServer() as any);
+      mockRepo.delete.mockReturnValue(true as any);
 
       expect(() => service.delete('srv-1')).not.toThrow();
+      expect(mockAlertRepo.deleteByServer).toHaveBeenCalledWith('srv-1');
       expect(mockRepo.delete).toHaveBeenCalledWith('srv-1');
     });
 
@@ -200,12 +210,20 @@ describe('ServerService (unit)', () => {
     it('logs deletion to audit log', () => {
       const { auditLogRepository } = require('../src/repositories/AuditLogRepository');
       mockRepo.findById.mockReturnValue(makeServer() as any);
+      mockRepo.delete.mockReturnValue(true as any);
 
       service.delete('srv-1', 'user-2');
 
       expect(auditLogRepository.create).toHaveBeenCalledWith(
         expect.objectContaining({ action: 'SERVER_DELETED', user_id: 'user-2' })
       );
+    });
+
+    it('throws when repository deletion does not remove the server', () => {
+      mockRepo.findById.mockReturnValue(makeServer() as any);
+      mockRepo.delete.mockReturnValue(false as any);
+
+      expect(() => service.delete('srv-1')).toThrow('could not be deleted');
     });
   });
 

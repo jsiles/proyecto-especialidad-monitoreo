@@ -109,9 +109,13 @@ export function ServersPage() {
     if (!confirm(`Are you sure you want to delete server "${name}"?`)) return;
 
     try {
-      await deleteServer(id);
+      const deleted = await deleteServer(id);
+      if (!deleted) {
+        setError("Server could not be deleted");
+        return;
+      }
       setSuccess("Server deleted successfully!");
-      refreshServers();
+      await refreshServers();
     } catch (err) {
       setError(getErrorMessage(err));
     }

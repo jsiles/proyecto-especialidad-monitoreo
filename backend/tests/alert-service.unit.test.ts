@@ -260,6 +260,7 @@ describe('AlertService (unit)', () => {
     it('resolves alert and emits notification', () => {
       const alert = makeAlertWithDetails({ resolved: false });
       mockAlertRepo.findById.mockReturnValue(alert as any);
+      mockAlertRepo.findAll.mockReturnValue([alert] as any);
       mockAlertRepo.resolve.mockReturnValue({ ...alert, resolved: true } as any);
       mockAlertRepo.findByIdWithDetails.mockReturnValue({ ...alert, resolved: true } as any);
 
@@ -267,6 +268,30 @@ describe('AlertService (unit)', () => {
 
       expect(result.resolved).toBe(true);
       expect(mockNotification.emitAlertResolved).toHaveBeenCalledTimes(1);
+    });
+
+    it('resolves related active alerts with the same threshold', () => {
+      const alert = makeAlertWithDetails({ id: 'alert-1', threshold_id: 'threshold-1', resolved: false });
+      const duplicate = makeAlertWithDetails({
+        id: 'alert-2',
+        threshold_id: 'threshold-1',
+        message: 'CPU usage high again',
+        resolved: false,
+      });
+
+      mockAlertRepo.findById.mockReturnValue(alert as any);
+      mockAlertRepo.findAll.mockReturnValue([alert, duplicate] as any);
+      mockAlertRepo.resolve.mockReturnValue({ ...alert, resolved: true } as any);
+      mockAlertRepo.findByIdWithDetails.mockImplementation((id: string) => ({
+        ...(id === 'alert-2' ? duplicate : alert),
+        resolved: true,
+      }) as any);
+
+      service.resolveAlert('alert-1');
+
+      expect(mockAlertRepo.resolve).toHaveBeenCalledWith('alert-1');
+      expect(mockAlertRepo.resolve).toHaveBeenCalledWith('alert-2');
+      expect(mockNotification.emitAlertResolved).toHaveBeenCalledTimes(2);
     });
 
     it('throws NotFoundError when alert does not exist', () => {
@@ -313,7 +338,7 @@ describe('AlertService (unit)', () => {
       const result = service.getThresholds();
 
       expect(result).toHaveLength(1);
-      expect(mockThresholdRepo.findAll).toHaveBeenCalled();
+      expect(mockThresholdRepo.findAll).toHaveBeenCalledWith({ enabled: true });
     });
 
     it('returns thresholds filtered by serverId', () => {
@@ -358,6 +383,20 @@ describe('AlertService (unit)', () => {
       expect(result.id).toBe('thresh-new');
     });
 
+    it('creates a global threshold when server_id is null', () => {
+      mockThresholdRepo.exists.mockReturnValue(false);
+      mockThresholdRepo.create.mockReturnValue({ id: 'thresh-global' } as any);
+      mockThresholdRepo.findByIdWithServer.mockReturnValue(
+        makeThresholdWithServer({ id: 'thresh-global', server_id: null, server_name: null }) as any
+      );
+
+      const result = service.createThreshold({ server_id: null, metric_type: 'cpu', threshold_value: 80 });
+
+      expect(result.id).toBe('thresh-global');
+      expect(mockServerRepo.findById).not.toHaveBeenCalled();
+      expect(mockThresholdRepo.exists).toHaveBeenCalledWith(null, 'cpu', 'warning');
+    });
+
     it('throws BadRequestError when server does not exist', () => {
       mockServerRepo.findById.mockReturnValue(null as any);
 
@@ -399,11 +438,11 @@ describe('AlertService (unit)', () => {
   // ─── deleteThreshold ────────────────────────────────────────────────────
 
   describe('deleteThreshold', () => {
-    it('deletes threshold when it exists', () => {
+    it('disables threshold when it exists', () => {
       mockThresholdRepo.findById.mockReturnValue({ id: 'thresh-1' } as any);
 
       expect(() => service.deleteThreshold('thresh-1')).not.toThrow();
-      expect(mockThresholdRepo.delete).toHaveBeenCalledWith('thresh-1');
+      expect(mockThresholdRepo.update).toHaveBeenCalledWith('thresh-1', { enabled: false });
     });
 
     it('throws NotFoundError when threshold does not exist', () => {

@@ -23,7 +23,7 @@ export interface ThresholdWithServer extends AlertThreshold {
 
 // Type for creating a new threshold
 export interface CreateThresholdInput {
-  server_id?: string;
+  server_id?: string | null;
   metric_type: MetricType;
   threshold_value: number;
   severity?: ThresholdSeverity;

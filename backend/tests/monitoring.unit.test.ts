@@ -292,6 +292,48 @@ describe('MonitoringService (unit, axios mocked)', () => {
     expect(createAlertSpy).not.toHaveBeenCalled();
   });
 
+  it('getServerMetrics: creates a critical status alert when a server goes offline', async () => {
+    mockedAxios.get.mockResolvedValue(prometheusEmpty());
+    jest.spyOn(thresholdRepository, 'findByServer').mockReturnValue([]);
+    jest.spyOn(alertRepository, 'findAll').mockReturnValue([]);
+    const createAlertSpy = jest.spyOn(alertService, 'createAlert').mockReturnValue({} as any);
+
+    await monitoringService.getServerMetrics(createdServerId);
+
+    expect(createAlertSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        server_id: createdServerId,
+        message: expect.stringContaining('is offline'),
+        severity: 'critical',
+      })
+    );
+  });
+
+  it('getServerMetrics: resolves an active offline status alert when the server recovers', async () => {
+    mockedAxios.get.mockResolvedValue(prometheusInstant('42.0'));
+    jest.spyOn(thresholdRepository, 'findByServer').mockReturnValue([]);
+    jest.spyOn(alertRepository, 'findAll').mockReturnValue([
+      {
+        id: 'offline-alert-1',
+        server_id: createdServerId,
+        threshold_id: null,
+        message: `Server ${serverRepository.findById(createdServerId)!.name} is offline`,
+        severity: 'critical',
+        acknowledged: false,
+        acknowledged_by: null,
+        acknowledged_at: null,
+        resolved: false,
+        resolved_at: null,
+        created_at: new Date().toISOString(),
+      } as any,
+    ]);
+    const resolveAlertSpy = jest.spyOn(alertService, 'resolveAlert').mockReturnValue({} as any);
+
+    await monitoringService.getServerMetrics(createdServerId);
+
+    expect(resolveAlertSpy).toHaveBeenCalledWith('offline-alert-1');
+  });
+
   // ─── getMetricsHistory ───────────────────────────────────────────────────
 
   it('getMetricsHistory: returns array when Prometheus provides range data', async () => {

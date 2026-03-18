@@ -1,76 +1,113 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import { vi } from 'vitest';
 import { Layout } from './Layout';
 
 const deps = vi.hoisted(() => ({
-  useLocation: vi.fn(),
-  useNavigate: vi.fn(),
   useAuth: vi.fn(),
+  useAlerts: vi.fn(),
 }));
-
-vi.mock('react-router', async () => {
-  const actual = await vi.importActual<typeof import('react-router')>('react-router');
-  return {
-    ...actual,
-    Link: ({ children, to, onClick, className }: any) => (
-      <a href={to} onClick={onClick} className={className}>
-        {children}
-      </a>
-    ),
-    Outlet: () => <div>Outlet content</div>,
-    useLocation: deps.useLocation,
-    useNavigate: deps.useNavigate,
-  };
-});
 
 vi.mock('../../contexts/AuthContext', () => ({
   useAuth: deps.useAuth,
 }));
 
-describe('Layout', () => {
-  const navigate = vi.fn();
-  const logout = vi.fn();
+vi.mock('../../hooks/useAlerts', () => ({
+  useAlerts: deps.useAlerts,
+}));
 
+describe('Layout', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    deps.useLocation.mockReturnValue({ pathname: '/' });
-    deps.useNavigate.mockReturnValue(navigate);
-    deps.useAuth.mockReturnValue({ logout });
-    logout.mockResolvedValue(undefined);
+    window.__monitoringRealtimeConnected = false;
+    deps.useAuth.mockReturnValue({
+      user: { username: 'admin', email: 'admin@test.com' },
+      logout: vi.fn(),
+      saveProfile: vi.fn(),
+    });
+    deps.useAlerts.mockReturnValue({
+      activeAlerts: [],
+    });
   });
 
-  it('renders navigation and outlet content', () => {
-    render(<Layout />);
+  const renderLayout = () =>
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<div>Dashboard content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
 
-    expect(screen.getByText('Server Monitoring')).toBeInTheDocument();
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Servers')).toBeInTheDocument();
-    expect(screen.getByText('Alerts')).toBeInTheDocument();
-    expect(screen.getByText('Reports')).toBeInTheDocument();
-    expect(screen.getByText('Outlet content')).toBeInTheDocument();
+  it('shows disconnected realtime status by default and updates on websocket events', () => {
+    renderLayout();
+
+    expect(screen.getByText('Tiempo real desconectado')).toBeInTheDocument();
+
+    act(() => {
+      window.dispatchEvent(
+        new CustomEvent('monitoring:websocket-status', {
+          detail: { isConnected: true },
+        })
+      );
+    });
+
+    expect(screen.getByText('Tiempo real conectado')).toBeInTheDocument();
   });
 
-  it('logs out and navigates to login', async () => {
-    render(<Layout />);
+  it('reads the latest persisted websocket state on mount', () => {
+    window.__monitoringRealtimeConnected = true;
 
-    const buttons = screen.getAllByRole('button');
-    fireEvent.click(buttons[3]);
+    renderLayout();
 
-    await waitFor(() => expect(logout).toHaveBeenCalled());
-    expect(navigate).toHaveBeenCalledWith('/login');
+    expect(screen.getByText('Tiempo real conectado')).toBeInTheDocument();
   });
 
-  it('toggles the mobile menu and closes it after selecting an item', () => {
-    render(<Layout />);
+  it('shows a red dot on the bell only when there are pending alerts', () => {
+    deps.useAlerts.mockReturnValueOnce({
+      activeAlerts: [{ id: 'alert-1' }],
+    });
 
-    const buttons = screen.getAllByRole('button');
-    fireEvent.click(buttons[4]);
+    const { rerender } = render(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<div>Dashboard content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
 
-    const mobileServersLinks = screen.getAllByText('Servers');
-    expect(mobileServersLinks.length).toBeGreaterThan(1);
+    expect(screen.getByTestId('header-alert-indicator')).toBeInTheDocument();
 
-    fireEvent.click(mobileServersLinks[1]);
+    deps.useAlerts.mockReturnValue({
+      activeAlerts: [],
+    });
 
-    expect(screen.getAllByText('Servers')).toHaveLength(1);
+    rerender(
+      <MemoryRouter initialEntries={['/']}>
+        <Routes>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<div>Dashboard content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
+
+    expect(screen.queryByTestId('header-alert-indicator')).not.toBeInTheDocument();
+  });
+
+  it('opens a profile form from the user button', () => {
+    renderLayout();
+
+    act(() => {
+      screen.getByRole('button', { name: 'Edit user profile' }).click();
+    });
+
+    expect(screen.getByText('Edit user profile')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('admin')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('admin@test.com')).toBeInTheDocument();
   });
 });

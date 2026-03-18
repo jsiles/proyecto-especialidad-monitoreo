@@ -6,8 +6,20 @@
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
 const mockSendMail = jest.fn();
+const mockMkdir = jest.fn();
+const mockWriteFile = jest.fn();
 jest.mock('nodemailer', () => ({
   createTransport: jest.fn(() => ({ sendMail: mockSendMail })),
+}));
+
+jest.mock('fs/promises', () => ({
+  __esModule: true,
+  default: {
+    mkdir: mockMkdir,
+    writeFile: mockWriteFile,
+  },
+  mkdir: mockMkdir,
+  writeFile: mockWriteFile,
 }));
 
 jest.mock('../src/services/MonitoringService', () => ({
@@ -64,6 +76,10 @@ describe('EmailService (unit)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     process.env = { ...originalEnv };
+    process.env.SMTP_MAX_RETRIES = '3';
+    process.env.SMTP_RETRY_DELAY_MS = '0';
+    mockMkdir.mockResolvedValue(undefined);
+    mockWriteFile.mockResolvedValue(undefined);
   });
 
   afterAll(() => {
@@ -71,7 +87,8 @@ describe('EmailService (unit)', () => {
   });
 
   describe('constructor', () => {
-    it('creates smtp transporter when SMTP_HOST is set', () => {
+    it('creates smtp transporter when SMTP_MODE is real', () => {
+      process.env.SMTP_MODE = 'real';
       process.env.SMTP_HOST = 'smtp.example.com';
       process.env.SMTP_PORT = '587';
       process.env.SMTP_USER = 'user';
@@ -84,14 +101,22 @@ describe('EmailService (unit)', () => {
       );
     });
 
-    it('creates json transporter when SMTP_HOST is not set', () => {
-      delete process.env.SMTP_HOST;
+    it('creates json transporter by default in emulated mode', () => {
+      delete process.env.SMTP_MODE;
+      process.env.SMTP_HOST = 'smtp.example.com';
 
       new EmailService();
 
       expect(nodemailer.createTransport).toHaveBeenCalledWith(
         expect.objectContaining({ jsonTransport: true })
       );
+    });
+
+    it('throws when SMTP_MODE is real and SMTP_HOST is missing', () => {
+      process.env.SMTP_MODE = 'real';
+      delete process.env.SMTP_HOST;
+
+      expect(() => new EmailService()).toThrow('SMTP_HOST is required when SMTP_MODE=real');
     });
 
     it('reads default recipients from ALERT_EMAIL_TO env', () => {
@@ -104,6 +129,7 @@ describe('EmailService (unit)', () => {
   describe('sendCriticalAlertNotification', () => {
     it('sends email to configured recipients', async () => {
       process.env.ALERT_EMAIL_TO = 'admin@monitoring.local';
+      process.env.EMAIL_EMULATION_OUTPUT_DIR = './data/test-emails';
       mockSendMail.mockResolvedValue({ messageId: 'msg-1' });
 
       const service = new EmailService();
@@ -114,12 +140,21 @@ describe('EmailService (unit)', () => {
           to: ['admin@monitoring.local'],
           subject: expect.stringContaining('CRITICAL'),
           text: expect.stringContaining('CPU usage critically high'),
+          html: expect.stringContaining('<h2>Alerta critica detectada</h2>'),
         })
+      );
+      expect(mockMkdir).toHaveBeenCalledWith(expect.stringContaining('data\\test-emails'), { recursive: true });
+      expect(mockWriteFile).toHaveBeenCalledWith(
+        expect.stringMatching(/alert-1\.html$/),
+        expect.stringContaining('CPU usage critically high'),
+        'utf8'
       );
     });
 
     it('includes server name in subject when available', async () => {
       process.env.ALERT_EMAIL_TO = 'admin@monitoring.local';
+      process.env.SMTP_MODE = 'real';
+      process.env.SMTP_HOST = 'smtp.example.com';
       mockSendMail.mockResolvedValue({});
 
       const service = new EmailService();
@@ -130,6 +165,7 @@ describe('EmailService (unit)', () => {
           subject: expect.stringContaining('DB Server'),
         })
       );
+      expect(mockWriteFile).not.toHaveBeenCalled();
     });
 
     it('skips sending when recipients are whitespace-only', async () => {
@@ -141,6 +177,7 @@ describe('EmailService (unit)', () => {
       await service.sendCriticalAlertNotification(makeAlert());
 
       expect(mockSendMail).not.toHaveBeenCalled();
+      expect(mockWriteFile).not.toHaveBeenCalled();
     });
 
     it('propagates error when sendMail fails', async () => {
@@ -151,6 +188,7 @@ describe('EmailService (unit)', () => {
       await expect(service.sendCriticalAlertNotification(makeAlert())).rejects.toThrow(
         'SMTP connection refused'
       );
+      expect(mockSendMail).toHaveBeenCalledTimes(3);
     });
 
     it('includes all alert fields in email body', async () => {
@@ -164,6 +202,21 @@ describe('EmailService (unit)', () => {
       const callArgs = mockSendMail.mock.calls[0][0];
       expect(callArgs.text).toContain('critical');
       expect(callArgs.text).toContain('Disk full');
+      expect(callArgs.html).toContain('Disk full');
+      expect(callArgs.html).toContain('alert-1');
+      expect(mockWriteFile).toHaveBeenCalled();
+    });
+
+    it('retries failed deliveries until a later attempt succeeds', async () => {
+      process.env.ALERT_EMAIL_TO = 'admin@monitoring.local';
+      mockSendMail
+        .mockRejectedValueOnce(new Error('temporary smtp failure'))
+        .mockResolvedValueOnce({ messageId: 'msg-2' });
+
+      const service = new EmailService();
+      await service.sendCriticalAlertNotification(makeAlert());
+
+      expect(mockSendMail).toHaveBeenCalledTimes(2);
     });
   });
 });

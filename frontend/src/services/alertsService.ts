@@ -23,7 +23,8 @@ export interface Alert {
 
 export interface AlertThreshold {
   id: string;
-  server_id: string;
+  server_id: string | null;
+  server_name?: string | null;
   metric_type: 'cpu' | 'memory' | 'disk';
   threshold_value: number;
   severity: 'info' | 'warning' | 'critical';
@@ -31,7 +32,7 @@ export interface AlertThreshold {
 }
 
 export interface CreateThresholdData {
-  server_id: string;
+  server_id?: string | null;
   metric_type: 'cpu' | 'memory' | 'disk';
   threshold_value: number;
   severity: 'info' | 'warning' | 'critical';

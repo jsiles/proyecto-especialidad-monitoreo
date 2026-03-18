@@ -32,6 +32,11 @@ export interface ChangePasswordData {
   newPassword: string;
 }
 
+export interface UpdateProfileData {
+  username: string;
+  email: string;
+}
+
 export interface LoginResponse {
   token: string;
   user: User;
@@ -112,6 +117,16 @@ export const authService = {
   async getCurrentUser(): Promise<User> {
     const response = await api.get<ApiResponse<{ user: User }>>('/auth/me');
     return response.data.data.user;
+  },
+
+  /**
+   * Actualizar información del usuario actual
+   */
+  async updateProfile(data: UpdateProfileData): Promise<User> {
+    const response = await api.put<ApiResponse<{ user: User }>>('/auth/me', data);
+    const user = response.data.data.user;
+    localStorage.setItem('user', JSON.stringify(user));
+    return user;
   },
 
   /**

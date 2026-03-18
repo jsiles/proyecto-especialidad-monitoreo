@@ -54,7 +54,7 @@ AVANCE VALIDADO:
 - La **Fase 9** quedó validada con cobertura superior a la meta en backend y frontend.
 - La **Fase 6** ya está operativa con Prometheus, Grafana embebido y exporters mock activos en Docker.
 - El dashboard principal ya refleja **7 entidades monitoreadas unificadas**: `spi-gateway`, `atc-gateway` y los 5 `srv-*`.
-- Las **Fases 7-8** siguen funcionales pero todavía requieren consolidación en notificaciones avanzadas y métricas ASFI complementarias.
+- Las **Fases 7-8** siguen funcionales pero todavía requieren consolidación final en SMTP real, enriquecimiento visual de reportes y cierre operativo de algunas capacidades avanzadas.
 
 ### ✅ Cobertura validada en Fase 9
 
@@ -172,7 +172,9 @@ proyecto-especialidad-monitoreo/
 - ✅ Historial completo de alertas
 - ✅ CRUD de umbrales (Create, Delete)
 - ✅ Auto-refresh cada 10 segundos
-- 🟡 Base preparada para notificaciones en tiempo real y extensiones de alertamiento avanzado
+- ✅ WebSocket validado con pruebas de integración autenticadas
+- ✅ Indicador visual de conexión en tiempo real en el header principal
+- 🟡 Base preparada para completar envío SMTP real y extensiones de alertamiento avanzado
 
 ### ✅ Reportes ASFI
 - ✅ Generación rápida de reporte ASFI
@@ -182,7 +184,9 @@ proyecto-especialidad-monitoreo/
 - ✅ Descarga de PDFs
 - ✅ Historial de reportes generados
 - ✅ Visualización de metadatos
-- 🟡 Pendiente de consolidar métricas avanzadas de cumplimiento como MTTR y MTBF
+- ✅ MTTR y MTBF calculados e incluidos en reportes
+- ✅ Disponibilidad calculada por duración real de incidentes dentro del rango del reporte
+- 🟡 Pendiente de enriquecer los PDFs con gráficos operativos adicionales
 
 ### ✅ Autenticación y Seguridad
 - ✅ Login con JWT
@@ -193,9 +197,29 @@ proyecto-especialidad-monitoreo/
 - ✅ Logs de auditoría
 
 ### ⏳ Pendientes de consolidación
-- ⏳ Activación end-to-end de notificaciones por email y WebSocket
+- ⏳ Activación end-to-end de notificaciones por email con credenciales SMTP reales
 - ⏳ Consolidación del stack de exporters mock dentro del entorno Docker de monitoreo
-- ⏳ Enriquecer reportes con gráficos operativos y métricas avanzadas de disponibilidad
+- ⏳ Enriquecer reportes con gráficos operativos embebidos
+
+### 📧 Modo SMTP emulado o real
+
+- `SMTP_MODE=emulated`: usa `jsonTransport` y permite probar el flujo de alertas sin un servidor SMTP real.
+- `SMTP_MODE=emulated`: usa `jsonTransport` y además genera un archivo HTML por correo en `EMAIL_EMULATION_OUTPUT_DIR`.
+- `SMTP_MODE=real`: activa el transporte SMTP real y requiere `SMTP_HOST` configurado.
+- Variables relacionadas: `ALERT_EMAIL_TO`, `SMTP_FROM`, `SMTP_MAX_RETRIES`, `SMTP_RETRY_DELAY_MS`, `EMAIL_EMULATION_OUTPUT_DIR`.
+
+### 🔌 Configuración correcta de WebSocket
+
+- `VITE_WS_URL` debe apuntar a la **URL base del backend**, por ejemplo: `http://localhost:3000`
+- No agregues `/ws` en esa variable, porque el cliente Socket.IO ya usa internamente `path: '/ws'`
+- Si configuras `VITE_WS_URL=http://localhost:3000/ws`, el cliente puede intentar entrar al namespace `/ws` y devolver `Invalid namespace`
+
+### 🌐 Configuración de CORS por entorno
+
+- El backend HTTP y el WebSocket leen los orígenes permitidos desde `CORS_ALLOWED_ORIGINS`
+- Puedes definir uno o varios orígenes separados por comas, por ejemplo: `CORS_ALLOWED_ORIGINS=http://localhost,http://localhost:5173`
+- `CORS_ALLOW_CREDENTIALS=true` mantiene habilitado el envío de credenciales/autorización
+- Si cambias estos valores en Docker, reconstruye o reinicia el servicio backend para aplicar la nueva política
 
 ## 🔐 Seguridad
 

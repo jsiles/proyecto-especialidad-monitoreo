@@ -4,6 +4,7 @@
  */
 
 import { serverRepository } from '../repositories/ServerRepository';
+import { alertRepository } from '../repositories/AlertRepository';
 import { auditLogRepository } from '../repositories/AuditLogRepository';
 import { CreateServerDTO, UpdateServerDTO, ServerResponseDTO, ServerQueryDTO } from '../dtos/ServerDTO';
 import { Server, ServerStatus } from '../models/Server';
@@ -115,7 +116,12 @@ export class ServerService {
       throw new NotFoundError(`Server with ID ${id} not found`);
     }
 
-    serverRepository.delete(id);
+    alertRepository.deleteByServer(id);
+
+    const deleted = serverRepository.delete(id);
+    if (!deleted) {
+      throw new NotFoundError(`Server with ID ${id} could not be deleted`);
+    }
 
     // Log deletion
     auditLogRepository.create({

@@ -67,6 +67,24 @@ function makeReport(overrides: Record<string, unknown> = {}) {
   };
 }
 
+function makeAlert(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'alert-1',
+    server_id: 'srv-1',
+    threshold_id: null,
+    server_name: 'Server 1',
+    message: 'CPU high',
+    severity: 'critical',
+    acknowledged: false,
+    acknowledged_by: null,
+    acknowledged_at: null,
+    resolved: true,
+    resolved_at: '2026-03-01T01:00:00.000Z',
+    created_at: '2026-03-01T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
 describe('ReportService (unit)', () => {
   let service: ReportService;
 
@@ -329,6 +347,81 @@ describe('ReportService (unit)', () => {
 
       expect(mockReportRepository.getStatistics).toHaveBeenCalled();
       expect(result).toEqual(stats);
+    });
+  });
+
+  describe('availability helpers', () => {
+    const reportWindow = {
+      type: 'weekly',
+      from_date: '2026-03-01T00:00:00.000Z',
+      to_date: '2026-03-01T10:00:00.000Z',
+    };
+
+    it('calculates availability from actual downtime duration', () => {
+      const availability = (service as any).calculateServerAvailability(
+        [
+          makeAlert({
+            created_at: '2026-03-01T01:00:00.000Z',
+            resolved_at: '2026-03-01T03:00:00.000Z',
+          }),
+        ],
+        reportWindow
+      );
+
+      expect(availability).toBeCloseTo(80, 5);
+    });
+
+    it('clips downtime to the requested report window', () => {
+      const availability = (service as any).calculateServerAvailability(
+        [
+          makeAlert({
+            created_at: '2026-02-28T23:00:00.000Z',
+            resolved_at: '2026-03-01T02:00:00.000Z',
+          }),
+          makeAlert({
+            created_at: '2026-03-01T09:00:00.000Z',
+            resolved_at: null,
+            resolved: false,
+          }),
+        ],
+        reportWindow
+      );
+
+      expect(availability).toBeCloseTo(70, 5);
+    });
+
+    it('merges overlapping alert windows to avoid double-counting downtime', () => {
+      const availability = (service as any).calculateServerAvailability(
+        [
+          makeAlert({
+            created_at: '2026-03-01T01:00:00.000Z',
+            resolved_at: '2026-03-01T04:00:00.000Z',
+          }),
+          makeAlert({
+            id: 'alert-2',
+            created_at: '2026-03-01T03:00:00.000Z',
+            resolved_at: '2026-03-01T06:00:00.000Z',
+          }),
+        ],
+        reportWindow
+      );
+
+      expect(availability).toBeCloseTo(50, 5);
+    });
+
+    it('ignores informational alerts when computing downtime', () => {
+      const availability = (service as any).calculateServerAvailability(
+        [
+          makeAlert({
+            severity: 'info',
+            created_at: '2026-03-01T01:00:00.000Z',
+            resolved_at: '2026-03-01T09:00:00.000Z',
+          }),
+        ],
+        reportWindow
+      );
+
+      expect(availability).toBe(100);
     });
   });
 });

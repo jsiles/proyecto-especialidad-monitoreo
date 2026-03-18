@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { vi } from 'vitest';
 import { AlertsManagement } from './AlertsManagement';
@@ -6,7 +6,9 @@ import { AlertsManagement } from './AlertsManagement';
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
 const mockFetchAlerts = vi.fn();
+const mockFetchActiveAlerts = vi.fn();
 const mockFetchThresholds = vi.fn();
+const mockRefreshAll = vi.fn();
 const mockAcknowledgeAlert = vi.fn();
 const mockResolveAlert = vi.fn();
 const mockCreateThreshold = vi.fn();
@@ -36,6 +38,7 @@ const alertDeps = vi.hoisted(() => ({
       resolved: false,
     },
   ],
+  alertsTotal: 1,
   thresholds: [
     {
       id: 't1',
@@ -60,13 +63,15 @@ vi.mock('date-fns', () => ({
 vi.mock('../../hooks/useAlerts', () => ({
   useAlerts: () => ({
     alerts: alertDeps.alerts,
+    alertsTotal: alertDeps.alertsTotal,
     activeAlerts: alertDeps.activeAlerts,
     thresholds: alertDeps.thresholds,
     loading: alertDeps.loading,
     error: null,
     fetchAlerts: mockFetchAlerts,
-    fetchActiveAlerts: vi.fn(),
+    fetchActiveAlerts: mockFetchActiveAlerts,
     fetchThresholds: mockFetchThresholds,
+    refreshAll: mockRefreshAll,
     acknowledgeAlert: mockAcknowledgeAlert,
     resolveAlert: mockResolveAlert,
     createThreshold: mockCreateThreshold,
@@ -126,6 +131,7 @@ describe('AlertsManagement', () => {
         resolved: false,
       },
     ];
+    alertDeps.alertsTotal = 1;
     alertDeps.thresholds = [
       {
         id: 't1',
@@ -177,6 +183,37 @@ describe('AlertsManagement', () => {
     expect(mockAcknowledgeAlert).toHaveBeenCalledWith('a1');
   });
 
+  it('allows creating a global threshold for all servers', async () => {
+    const user = userEvent.setup();
+    mockCreateThreshold.mockResolvedValue({
+      id: 't-global',
+      server_id: null,
+      metric_type: 'cpu',
+      threshold_value: 80,
+      severity: 'warning',
+    });
+    render(<AlertsManagement />);
+
+    await user.click(screen.getByRole('tab', { name: /thresholds/i }));
+    await user.click(screen.getByRole('button', { name: /create threshold/i }));
+
+    expect(mockCreateThreshold).toHaveBeenCalledWith(
+      expect.objectContaining({
+        server_id: null,
+        metric_type: 'cpu',
+        threshold_value: 80,
+        severity: 'warning',
+      })
+    );
+  });
+
+  it('shows the real total in the All Alerts tab label', () => {
+    alertDeps.alertsTotal = 137;
+    render(<AlertsManagement />);
+
+    expect(screen.getByText('All Alerts (137)')).toBeInTheDocument();
+  });
+
   it('switches to Thresholds tab', async () => {
     const user = userEvent.setup();
     render(<AlertsManagement />);
@@ -193,7 +230,30 @@ describe('AlertsManagement', () => {
 
     await user.click(screen.getByRole('button', { name: /refresh/i }));
 
+    expect(mockRefreshAll).toHaveBeenCalled();
+  });
+
+  it('refreshes active alerts after resolving an alert', async () => {
+    const user = userEvent.setup();
+    mockResolveAlert.mockResolvedValue(true);
+    render(<AlertsManagement />);
+
+    await user.click(screen.getByRole('button', { name: /resolve/i }));
+
+    expect(mockResolveAlert).toHaveBeenCalledWith('a1');
     expect(mockFetchAlerts).toHaveBeenCalled();
+    expect(mockFetchActiveAlerts).toHaveBeenCalled();
+  });
+
+  it('refreshes thresholds after deleting one', async () => {
+    const user = userEvent.setup();
+    mockDeleteThreshold.mockResolvedValue(true);
+    render(<AlertsManagement />);
+
+    await user.click(screen.getByRole('tab', { name: /thresholds/i }));
+    await user.click(screen.getByLabelText('Delete threshold t1'));
+
+    expect(mockDeleteThreshold).toHaveBeenCalledWith('t1');
     expect(mockFetchThresholds).toHaveBeenCalled();
   });
 
@@ -291,19 +351,6 @@ describe('AlertsManagement', () => {
     expect(screen.getByRole('button', { name: /resolve/i })).toBeInTheDocument();
   });
 
-  it('validates server selection before creating a threshold', async () => {
-    render(<AlertsManagement />);
-
-    await userEvent.setup().click(screen.getByRole('tab', { name: /thresholds/i }));
-    const submitButton = screen.getByRole('button', { name: /create threshold/i });
-    const form = submitButton.closest('form');
-    expect(form).toBeTruthy();
-    fireEvent.submit(form!);
-
-    expect(screen.getByText('Please select a server')).toBeInTheDocument();
-    expect(mockCreateThreshold).not.toHaveBeenCalled();
-  });
-
   it('creates a threshold successfully and refreshes thresholds', async () => {
     const user = userEvent.setup();
     mockCreateThreshold.mockResolvedValue({ id: 't2' });
@@ -311,7 +358,10 @@ describe('AlertsManagement', () => {
     render(<AlertsManagement />);
 
     await user.click(screen.getByRole('tab', { name: /thresholds/i }));
-    await user.selectOptions(screen.getByDisplayValue('Select server...'), 'srv-1');
+    const form = screen.getByRole('button', { name: /create threshold/i }).closest('form');
+    expect(form).toBeTruthy();
+    const [serverSelect] = within(form as HTMLFormElement).getAllByRole('combobox');
+    await user.selectOptions(serverSelect, 'srv-1');
     await user.click(screen.getByRole('button', { name: /create threshold/i }));
 
     await waitFor(() => expect(mockCreateThreshold).toHaveBeenCalled());
@@ -326,7 +376,10 @@ describe('AlertsManagement', () => {
     render(<AlertsManagement />);
 
     await user.click(screen.getByRole('tab', { name: /thresholds/i }));
-    await user.selectOptions(screen.getByDisplayValue('Select server...'), 'srv-1');
+    const form = screen.getByRole('button', { name: /create threshold/i }).closest('form');
+    expect(form).toBeTruthy();
+    const [serverSelect] = within(form as HTMLFormElement).getAllByRole('combobox');
+    await user.selectOptions(serverSelect, 'srv-1');
     await user.click(screen.getByRole('button', { name: /create threshold/i }));
 
     expect(await screen.findByText('Error: Error: boom')).toBeInTheDocument();

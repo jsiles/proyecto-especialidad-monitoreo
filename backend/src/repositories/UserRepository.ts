@@ -103,6 +103,11 @@ export class UserRepository {
     const updates: string[] = [];
     const values: (string | null)[] = [];
 
+    if (input.username !== undefined) {
+      updates.push('username = ?');
+      values.push(input.username);
+    }
+
     if (input.email !== undefined) {
       updates.push('email = ?');
       values.push(input.email || null);
