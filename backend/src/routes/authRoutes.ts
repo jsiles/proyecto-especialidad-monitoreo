@@ -97,6 +97,19 @@ router.post('/login', authController.login);
  *     responses:
  *       201:
  *         description: User registered successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
  *       400:
  *         description: Validation error
  */
@@ -113,6 +126,22 @@ router.post('/register', authController.register);
  *     responses:
  *       200:
  *         description: Token is valid
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     valid:
+ *                       type: boolean
+ *                       example: true
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
  *       401:
  *         description: Invalid or expired token
  */
@@ -129,6 +158,10 @@ router.get('/verify', authenticate, authController.verifyToken);
  *     responses:
  *       200:
  *         description: Logout successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
  */
 router.post('/logout', authenticate, authController.logout);
 
@@ -159,6 +192,10 @@ router.post('/logout', authenticate, authController.logout);
  *     responses:
  *       200:
  *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
  *       400:
  *         description: Invalid current password
  */
@@ -189,6 +226,41 @@ router.post('/change-password', authenticate, authController.changePassword);
  *                       $ref: '#/components/schemas/User'
  */
 router.get('/me', authenticate, authController.getCurrentUser);
+/**
+ * @swagger
+ * /api/auth/me:
+ *   put:
+ *     summary: Update current user information
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *     responses:
+ *       200:
+ *         description: User information updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     user:
+ *                       $ref: '#/components/schemas/User'
+ */
 router.put('/me', authenticate, authController.updateCurrentUser);
 
 export default router;

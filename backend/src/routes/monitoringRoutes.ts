@@ -37,7 +37,7 @@ router.use(authenticate);
  *                 success:
  *                   type: boolean
  *                 data:
- *                   $ref: '#/components/schemas/Metrics'
+ *                   $ref: '#/components/schemas/MetricsSnapshot'
  */
 router.get('/', monitoringController.getCurrentMetrics);
 
@@ -52,6 +52,15 @@ router.get('/', monitoringController.getCurrentMetrics);
  *     responses:
  *       200:
  *         description: Aggregated metrics summary
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/MetricsSummary'
  */
 router.get('/summary', monitoringController.getSummary);
 
@@ -79,9 +88,32 @@ router.get('/summary', monitoringController.getSummary);
  *         schema:
  *           type: string
  *           enum: [1m, 5m, 15m, 1h, 1d]
+ *       - in: query
+ *         name: server_id
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: metric_type
+ *         schema:
+ *           type: string
+ *           enum: [cpu, memory, disk, network]
  *     responses:
  *       200:
  *         description: Historical metrics data
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     history:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/MetricsHistorySeries'
  */
 router.get('/history', monitoringController.getHistory);
 
@@ -109,14 +141,102 @@ router.get('/history', monitoringController.getHistory);
  *         schema:
  *           type: string
  *           format: date-time
+ *       - in: query
+ *         name: interval
+ *         schema:
+ *           type: string
+ *           enum: [1m, 5m, 15m, 1h, 1d]
+ *       - in: query
+ *         name: metric_type
+ *         schema:
+ *           type: string
+ *           enum: [cpu, memory, disk, network]
  *     responses:
  *       200:
  *         description: Server historical metrics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     serverId:
+ *                       type: string
+ *                     history:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/MetricsHistorySeries'
  */
 router.get('/history/:serverId', monitoringController.getServerHistory);
 
+/**
+ * @swagger
+ * /api/metrics/spi:
+ *   get:
+ *     summary: Get SPI metrics
+ *     description: Returns near real-time operational metrics for the SPI national payments system.
+ *     tags: [Metrics]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: SPI metrics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/SPIMetrics'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *                     system:
+ *                       type: string
+ *                       example: SPI
+ */
 router.get('/spi', metricsController.getSPIMetrics);
 
+/**
+ * @swagger
+ * /api/metrics/atc:
+ *   get:
+ *     summary: Get ATC metrics
+ *     description: Returns near real-time operational metrics for the ATC card-processing system.
+ *     tags: [Metrics]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: ATC metrics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/ATCMetrics'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *                     system:
+ *                       type: string
+ *                       example: ATC
+ */
 router.get('/atc', metricsController.getATCMetrics);
 
 /**
@@ -152,6 +272,15 @@ router.get('/atc', metricsController.getATCMetrics);
  *     responses:
  *       200:
  *         description: Server metrics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/ServerMetrics'
  */
 router.get('/server/:serverId', monitoringController.getServerMetrics);
 

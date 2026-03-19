@@ -26,10 +26,10 @@ router.use(authenticate);
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
- *         name: page
+ *         name: status
  *         schema:
- *           type: integer
- *           default: 1
+ *           type: string
+ *           enum: [online, offline, degraded, unknown]
  *       - in: query
  *         name: limit
  *         schema:
@@ -39,6 +39,21 @@ router.use(authenticate);
  *         name: type
  *         schema:
  *           type: string
+ *           enum: [application, database, web, cache, spi, atc, other]
+ *       - in: query
+ *         name: environment
+ *         schema:
+ *           type: string
+ *           enum: [production, staging, development, testing]
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
+ *           default: 0
  *     responses:
  *       200:
  *         description: List of servers
@@ -86,7 +101,10 @@ router.get('/', serverController.getAll);
  *                 success:
  *                   type: boolean
  *                 data:
- *                   $ref: '#/components/schemas/Server'
+ *                   type: object
+ *                   properties:
+ *                     server:
+ *                       $ref: '#/components/schemas/Server'
  *       404:
  *         description: Server not found
  */
@@ -113,15 +131,31 @@ router.get('/:id', serverController.getById);
  *             properties:
  *               name:
  *                 type: string
+ *                 example: Server-APP-01
  *               ip_address:
  *                 type: string
+ *                 example: 192.168.1.100
  *               type:
  *                 type: string
+ *                 enum: [application, database, web, cache, spi, atc, other]
  *               environment:
  *                 type: string
+ *                 enum: [production, staging, development, testing]
  *     responses:
  *       201:
  *         description: Server created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     server:
+ *                       $ref: '#/components/schemas/Server'
  *       403:
  *         description: Admin role required
  */
@@ -150,15 +184,34 @@ router.post('/', authorize('ADMIN'), serverController.create);
  *             properties:
  *               name:
  *                 type: string
+ *                 example: Server-APP-01
  *               ip_address:
  *                 type: string
+ *                 example: 192.168.1.100
  *               type:
  *                 type: string
+ *                 enum: [application, database, web, cache, spi, atc, other]
  *               environment:
  *                 type: string
+ *                 enum: [production, staging, development, testing]
+ *               status:
+ *                 type: string
+ *                 enum: [online, offline, degraded, unknown]
  *     responses:
  *       200:
  *         description: Server updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     server:
+ *                       $ref: '#/components/schemas/Server'
  *       403:
  *         description: Admin role required
  */
@@ -181,6 +234,10 @@ router.put('/:id', authorize('ADMIN'), serverController.update);
  *     responses:
  *       200:
  *         description: Server deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
  *       403:
  *         description: Admin role required
  */
@@ -203,6 +260,24 @@ router.delete('/:id', authorize('ADMIN'), serverController.delete);
  *     responses:
  *       200:
  *         description: Server status
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     serverId:
+ *                       type: string
+ *                     status:
+ *                       type: string
+ *                       enum: [online, offline, degraded, unknown]
+ *                     lastCheck:
+ *                       type: string
+ *                       format: date-time
  */
 router.get('/:id/status', serverController.getStatus);
 
@@ -223,6 +298,15 @@ router.get('/:id/status', serverController.getStatus);
  *     responses:
  *       200:
  *         description: Server metrics
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/ServerMetrics'
  */
 router.get('/:id/metrics', serverController.getMetrics);
 

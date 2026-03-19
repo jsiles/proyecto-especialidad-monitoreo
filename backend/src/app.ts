@@ -11,14 +11,29 @@ import compression from 'compression';
 import swaggerUi from 'swagger-ui-express';
 
 import { createCorsOptions } from './config/cors';
+import { buildSwaggerSpec } from './config/swagger';
 import { errorHandler } from './middlewares/errorHandler';
 import { requestLogger } from './middlewares/requestLogger';
 import routes from './routes';
 import { logger } from './utils/logger';
-import { swaggerSpec } from './config/swagger';
 
 // Create Express application
 const app: Application = express();
+
+const resolveSwaggerServerUrl = (req: Request): string => {
+  const forwardedProtoHeader = req.headers['x-forwarded-proto'];
+  const forwardedProto = Array.isArray(forwardedProtoHeader)
+    ? forwardedProtoHeader[0]
+    : forwardedProtoHeader?.split(',')[0]?.trim();
+  const protocol = forwardedProto || req.protocol;
+  const host = req.get('host');
+
+  if (!host) {
+    return '/';
+  }
+
+  return `${protocol}://${host}`;
+};
 
 // ==================== SECURITY MIDDLEWARE ====================
 app.use(helmet({
@@ -64,15 +79,18 @@ app.get('/api/health', (_req: Request, res: Response) => {
 });
 
 // ==================== SWAGGER API DOCUMENTATION ====================
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(undefined, {
   customCss: '.swagger-ui .topbar { display: none }',
   customSiteTitle: 'Monitoring Platform API Docs',
+  swaggerOptions: {
+    url: '/api-docs.json',
+  },
 }));
 
 // Swagger JSON endpoint
-app.get('/api-docs.json', (_req: Request, res: Response) => {
+app.get('/api-docs.json', (req: Request, res: Response) => {
   res.setHeader('Content-Type', 'application/json');
-  res.send(swaggerSpec);
+  res.send(buildSwaggerSpec(resolveSwaggerServerUrl(req)));
 });
 
 // ==================== API ROUTES ====================

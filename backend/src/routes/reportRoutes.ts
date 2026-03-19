@@ -285,6 +285,10 @@ router.post('/generate/asfi', authorize('ADMIN', 'OPERATOR'), reportController.g
  *     responses:
  *       200:
  *         description: Report deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
  *       404:
  *         description: Report not found
  */

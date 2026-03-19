@@ -34,14 +34,36 @@ router.use(authenticate);
  *         schema:
  *           type: integer
  *       - in: query
+ *         name: server_id
+ *         schema:
+ *           type: string
+ *       - in: query
  *         name: severity
  *         schema:
  *           type: string
  *           enum: [critical, warning, info]
  *       - in: query
+ *         name: acknowledged
+ *         schema:
+ *           type: boolean
+ *       - in: query
  *         name: resolved
  *         schema:
  *           type: boolean
+ *       - in: query
+ *         name: from_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: to_date
+ *         schema:
+ *           type: string
+ *           format: date
+ *       - in: query
+ *         name: offset
+ *         schema:
+ *           type: integer
  *     responses:
  *       200:
  *         description: List of alerts
@@ -70,9 +92,31 @@ router.get('/', alertController.getAll);
  *     tags: [Alerts]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: severity
+ *         schema:
+ *           type: string
+ *           enum: [critical, warning, info]
  *     responses:
  *       200:
  *         description: List of active alerts
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     alerts:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Alert'
+ *                     total:
+ *                       type: integer
  */
 router.get('/active', alertController.getActive);
 
@@ -84,9 +128,28 @@ router.get('/active', alertController.getActive);
  *     tags: [Alerts]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: server_id
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: List of thresholds
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     thresholds:
+ *                       type: array
+ *                       items:
+ *                         $ref: '#/components/schemas/Threshold'
  *   post:
  *     summary: Create threshold
  *     tags: [Alerts]
@@ -106,17 +169,30 @@ router.get('/active', alertController.getActive);
  *             properties:
  *               server_id:
  *                 type: string
+ *                 nullable: true
  *               metric_type:
  *                 type: string
- *                 enum: [cpu, memory, disk]
+ *                 enum: [cpu, memory, disk, network_in, network_out, latency]
  *               threshold_value:
  *                 type: number
  *               severity:
  *                 type: string
- *                 enum: [critical, warning, info]
+ *                 enum: [critical, warning]
  *     responses:
  *       201:
  *         description: Threshold created
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     threshold:
+ *                       $ref: '#/components/schemas/Threshold'
  *       403:
  *         description: Admin role required
  */
@@ -148,9 +224,24 @@ router.post('/thresholds', authorize('ADMIN'), alertController.createThreshold);
  *                 type: number
  *               severity:
  *                 type: string
+ *                 enum: [warning, critical]
+ *               enabled:
+ *                 type: boolean
  *     responses:
  *       200:
  *         description: Threshold updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     threshold:
+ *                       $ref: '#/components/schemas/Threshold'
  *       403:
  *         description: Admin role required
  *   delete:
@@ -167,6 +258,10 @@ router.post('/thresholds', authorize('ADMIN'), alertController.createThreshold);
  *     responses:
  *       200:
  *         description: Threshold deleted
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MessageResponse'
  *       403:
  *         description: Admin role required
  */
@@ -190,6 +285,18 @@ router.delete('/thresholds/:id', authorize('ADMIN'), alertController.deleteThres
  *     responses:
  *       200:
  *         description: Alert details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     alert:
+ *                       $ref: '#/components/schemas/Alert'
  */
 router.get('/:id', alertController.getById);
 
@@ -210,6 +317,21 @@ router.get('/:id', alertController.getById);
  *     responses:
  *       200:
  *         description: Alert acknowledged
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     alert:
+ *                       $ref: '#/components/schemas/Alert'
+ *                     message:
+ *                       type: string
+ *                       example: Alert acknowledged
  */
 router.put('/:id/acknowledge', alertController.acknowledge);
 
@@ -230,6 +352,21 @@ router.put('/:id/acknowledge', alertController.acknowledge);
  *     responses:
  *       200:
  *         description: Alert resolved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     alert:
+ *                       $ref: '#/components/schemas/Alert'
+ *                     message:
+ *                       type: string
+ *                       example: Alert resolved
  */
 router.put('/:id/resolve', alertController.resolve);
 
