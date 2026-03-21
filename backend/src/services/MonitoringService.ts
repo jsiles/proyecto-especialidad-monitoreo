@@ -8,6 +8,7 @@ import { serverRepository } from '../repositories/ServerRepository';
 import { alertService } from './AlertService';
 import { thresholdRepository } from '../repositories/ThresholdRepository';
 import { alertRepository } from '../repositories/AlertRepository';
+import { metricsCacheRepository } from '../repositories/MetricsCacheRepository';
 import { 
   MetricsResponseDTO, 
   ServerMetricsDTO, 
@@ -30,19 +31,23 @@ export class MonitoringService {
     const serverMetrics: ServerMetricsDTO[] = [];
 
     for (const server of servers) {
+      let metricsSnapshot: ServerMetricsDTO;
+
       try {
-        const metrics = await this.getServerMetrics(server.id, server.name);
-        serverMetrics.push(metrics);
+        metricsSnapshot = await this.getServerMetrics(server.id, server.name, false);
       } catch (error) {
         logger.warn('Failed to fetch metrics for server', { serverId: server.id, error });
-        serverMetrics.push({
+        metricsSnapshot = {
           server_id: server.id,
           server_name: server.name,
           status: 'offline',
           metrics: { cpu: 0, memory: 0, disk: 0, network_in: 0, network_out: 0, uptime: 0 },
           last_update: new Date().toISOString(),
-        });
+        };
       }
+
+      this.persistMetricsSnapshot(metricsSnapshot);
+      serverMetrics.push(metricsSnapshot);
     }
 
     const summary = this.calculateSummary(serverMetrics);
@@ -57,7 +62,11 @@ export class MonitoringService {
   /**
    * Get metrics for a specific server
    */
-  public async getServerMetrics(serverId: string, serverName?: string): Promise<ServerMetricsDTO> {
+  public async getServerMetrics(
+    serverId: string,
+    serverName?: string,
+    persistSnapshot = true
+  ): Promise<ServerMetricsDTO> {
     const server = serverRepository.findById(serverId);
     if (!server) {
       throw new Error(`Server ${serverId} not found`);
@@ -65,69 +74,83 @@ export class MonitoringService {
 
     const name = serverName || server.name;
 
-    if (server.type === 'spi' || server.type === 'atc') {
-      return this.getNationalSystemMetrics(serverId, name, server.type, server.status);
-    }
-
     try {
-      // Query Prometheus for server metrics
-      const [cpuResult, memoryResult, diskResult, uptimeResult] = await Promise.all([
-        this.queryPrometheus(`cpu_usage_percent{server="${name}"}`),
-        this.queryPrometheus(`memory_usage_percent{server="${name}"}`),
-        this.queryPrometheus(`disk_usage_percent{server="${name}",mount="/"}`),
-        this.queryPrometheus(`server_uptime_seconds{server="${name}"}`),
-      ]);
+      let metricsSnapshot: ServerMetricsDTO;
 
-      const cpu = this.extractValue(cpuResult);
-      const memory = this.extractValue(memoryResult);
-      const disk = this.extractValue(diskResult);
-      const uptime = this.extractValue(uptimeResult);
-      const hasMetricsSignal =
-        cpuResult.length > 0 ||
-        memoryResult.length > 0 ||
-        diskResult.length > 0 ||
-        uptimeResult.length > 0;
+      if (server.type === 'spi' || server.type === 'atc') {
+        metricsSnapshot = await this.getNationalSystemMetrics(serverId, name, server.type, server.status);
+      } else {
+        // Query Prometheus for server metrics
+        const [cpuResult, memoryResult, diskResult, uptimeResult] = await Promise.all([
+          this.queryPrometheus(`cpu_usage_percent{server="${name}"}`),
+          this.queryPrometheus(`memory_usage_percent{server="${name}"}`),
+          this.queryPrometheus(`disk_usage_percent{server="${name}",mount="/"}`),
+          this.queryPrometheus(`server_uptime_seconds{server="${name}"}`),
+        ]);
 
-      // Determine status based on whether Prometheus still has signal for this server
-      const status = this.determineStatus(hasMetricsSignal, cpu, memory, disk);
+        const cpu = this.extractValue(cpuResult);
+        const memory = this.extractValue(memoryResult);
+        const disk = this.extractValue(diskResult);
+        const uptime = this.extractValue(uptimeResult);
+        const hasMetricsSignal =
+          cpuResult.length > 0 ||
+          memoryResult.length > 0 ||
+          diskResult.length > 0 ||
+          uptimeResult.length > 0;
 
-      // Update server status in database
-      if (server.status !== status) {
-        serverRepository.updateStatus(serverId, status);
+        // Determine status based on whether Prometheus still has signal for this server
+        const status = this.determineStatus(hasMetricsSignal, cpu, memory, disk);
+
+        // Update server status in database
+        if (server.status !== status) {
+          serverRepository.updateStatus(serverId, status);
+        }
+
+        this.syncStatusAlerts(serverId, name, status);
+
+        // Check thresholds and create alerts if needed
+        await this.checkThresholds(serverId, name, { cpu, memory, disk });
+
+        metricsSnapshot = {
+          server_id: serverId,
+          server_name: name,
+          status,
+          metrics: {
+            cpu,
+            memory,
+            disk,
+            network_in: 0, // TODO: Add network metrics
+            network_out: 0,
+            uptime,
+          },
+          last_update: new Date().toISOString(),
+        };
       }
 
-      this.syncStatusAlerts(serverId, name, status);
+      if (persistSnapshot) {
+        this.persistMetricsSnapshot(metricsSnapshot);
+      }
 
-      // Check thresholds and create alerts if needed
-      await this.checkThresholds(serverId, name, { cpu, memory, disk });
-
-      return {
-        server_id: serverId,
-        server_name: name,
-        status,
-        metrics: {
-          cpu,
-          memory,
-          disk,
-          network_in: 0, // TODO: Add network metrics
-          network_out: 0,
-          uptime,
-        },
-        last_update: new Date().toISOString(),
-      };
+      return metricsSnapshot;
     } catch (error) {
       logger.error('Error fetching server metrics', { serverId, error });
       
       // Mark server as offline if we can't get metrics
       serverRepository.updateStatus(serverId, 'unknown');
 
-      return {
+      const fallbackSnapshot: ServerMetricsDTO = {
         server_id: serverId,
         server_name: name,
         status: 'unknown',
         metrics: { cpu: 0, memory: 0, disk: 0, network_in: 0, network_out: 0, uptime: 0 },
         last_update: new Date().toISOString(),
       };
+
+      if (persistSnapshot) {
+        this.persistMetricsSnapshot(fallbackSnapshot);
+      }
+
+      return fallbackSnapshot;
     }
   }
 
@@ -403,6 +426,21 @@ export class MonitoringService {
         });
       }
     }
+  }
+
+  private persistMetricsSnapshot(snapshot: ServerMetricsDTO): void {
+    metricsCacheRepository.createSnapshot({
+      server_id: snapshot.server_id,
+      timestamp: snapshot.last_update,
+      metrics: {
+        cpu: snapshot.metrics.cpu,
+        memory: snapshot.metrics.memory,
+        disk: snapshot.metrics.disk,
+        network_in: snapshot.metrics.network_in,
+        network_out: snapshot.metrics.network_out,
+        uptime: snapshot.metrics.uptime,
+      },
+    });
   }
 
   /**

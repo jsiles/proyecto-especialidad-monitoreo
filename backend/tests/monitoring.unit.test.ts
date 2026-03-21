@@ -4,6 +4,7 @@
  */
 
 import axios from 'axios';
+import { getDatabase } from '../src/database/connection';
 import { monitoringService } from '../src/services/MonitoringService';
 import { serverRepository } from '../src/repositories/ServerRepository';
 import { thresholdRepository } from '../src/repositories/ThresholdRepository';
@@ -88,6 +89,12 @@ describe('MonitoringService (unit, axios mocked)', () => {
   afterEach(() => {
     jest.restoreAllMocks();
     mockedAxios.get.mockReset();
+    const db = getDatabase();
+    db.prepare('DELETE FROM metrics_cache WHERE server_id IN (?, ?, ?)').run(
+      createdServerId,
+      spiServerId,
+      atcServerId
+    );
   });
 
   // ─── getCurrentMetrics ───────────────────────────────────────────────────
@@ -146,6 +153,34 @@ describe('MonitoringService (unit, axios mocked)', () => {
     expect(metrics.metrics).toHaveProperty('memory');
     expect(metrics.metrics).toHaveProperty('disk');
     expect(metrics.status).toBe('online');
+  });
+
+  it('getServerMetrics: persists the snapshot into metrics_cache', async () => {
+    mockedAxios.get
+      .mockResolvedValueOnce(prometheusInstant('42.0'))
+      .mockResolvedValueOnce(prometheusInstant('43.0'))
+      .mockResolvedValueOnce(prometheusInstant('44.0'))
+      .mockResolvedValueOnce(prometheusInstant('3600'));
+
+    const metrics = await monitoringService.getServerMetrics(createdServerId);
+    const db = getDatabase();
+    const rows = db.prepare(`
+      SELECT metric_type, value
+      FROM metrics_cache
+      WHERE server_id = ?
+      ORDER BY metric_type ASC
+    `).all(createdServerId) as Array<{ metric_type: string; value: number }>;
+
+    expect(metrics.status).toBe('online');
+    expect(rows).toHaveLength(6);
+    expect(rows).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ metric_type: 'cpu', value: 42 }),
+        expect.objectContaining({ metric_type: 'memory', value: 43 }),
+        expect.objectContaining({ metric_type: 'disk', value: 44 }),
+        expect.objectContaining({ metric_type: 'uptime', value: 3600 }),
+      ])
+    );
   });
 
   it('getServerMetrics: updates server status when calculated status changes', async () => {
