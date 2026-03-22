@@ -1,325 +1,428 @@
-# 🖥️ Plataforma de Monitoreo en Tiempo Real de Servidores y Servicios TI
+# Plataforma de Monitoreo en Tiempo Real
 
-> **Universidad Católica Boliviana "San Pablo"**  
-> Maestría en Full Stack Development  
+> Universidad Catolica Boliviana "San Pablo"  
+> Maestria en Full Stack Development  
 > Especialidad en Arquitectura y Desarrollo de Software Avanzado
 
-## 📋 Descripción
+## Descripcion
 
-Sistema Full Stack de monitoreo bancario para instituciones financieras bolivianas medianas, diseñado para cumplir con la **Resolución ASFI N° 362/2021** (detección de fallas < 30 minutos). Utiliza tecnologías open-source con arquitectura modular contenerizada.
+Plataforma full stack para el monitoreo en tiempo real de servidores y servicios TI, orientada a escenarios bancarios y de cumplimiento ASFI. El proyecto integra backend con Express y TypeScript, frontend con React + Vite, base de datos SQLite, Prometheus, Grafana, exporters mock, WebSocket para alertas en tiempo real y generacion de reportes PDF.
 
-## 🎯 Objetivos Principales
+Este README refleja el estado real del codigo actual del repositorio.
 
-- ✅ Monitoreo de 5 servidores internos + 2 gateways nacionales simulados (SPI y ATC)
-- ✅ Detección de fallas en menos de 30 minutos
-- ✅ Generación automática de reportes ASFI (diario y semanal)
-- ✅ Dashboard en tiempo real con métricas de CPU, RAM y disponibilidad
-- ✅ Sistema de alertas con acknowledge/resolve
+## Estado actual
 
-## 🛠️ Stack Tecnológico
+- Backend API funcional con JWT, roles, Swagger, SQLite y WebSocket.
+- Frontend funcional con login, dashboard, servidores, alertas y reportes.
+- Monitoreo operativo con Prometheus, Grafana embebido y exporters mock de SPI, ATC y servidores.
+- Alertas con thresholds, acknowledge, resolve y notificaciones en tiempo real.
+- Reportes PDF y reporte ASFI disponibles desde la UI y la API.
+- Testing implementado en backend y frontend, con scripts de coverage incluidos.
 
-| Componente | Tecnología | Versión |
-|------------|------------|---------|
-| **Frontend** | React + TypeScript + Vite | 18.3.1 |
-| **Styling** | Tailwind CSS + shadcn/ui | 4.x |
-| **Backend** | Node.js + Express + TypeScript | 20.x LTS |
-| **Base de Datos** | SQLite | 3.x |
-| **Monitoreo** | Prometheus | 2.x |
-| **Visualización** | Grafana | 10.x |
-| **Contenedores** | Docker + Docker Compose | Latest |
-| **Autenticación** | JWT + bcrypt | - |
+## Stack real del proyecto
 
-## 📊 Estado del Proyecto
+| Capa | Tecnologia | Version / notas |
+|---|---|---|
+| Frontend | React + TypeScript + Vite | React 18.3.1, Vite 6.3.5 |
+| UI | Tailwind CSS + shadcn/ui + Radix UI | Tailwind 4.1.12 |
+| Componentes complementarios | Material UI | 7.3.5 |
+| Graficos | Recharts | 2.15.2 |
+| Formularios | React Hook Form + Zod | validacion en frontend |
+| Backend | Node.js + Express + TypeScript | Node 20+, Express 4.19 |
+| Base de datos | SQLite | better-sqlite3 11 |
+| Autenticacion | JWT + bcryptjs | roles ADMIN / OPERATOR / AUDITOR |
+| Tiempo real | Socket.IO | backend + frontend |
+| Reportes | PDFKit | PDF descargable |
+| Email | Nodemailer | modo real o emulado |
+| Monitoreo | Prometheus | v2.48 |
+| Visualizacion | Grafana | 10.2 |
+| Documentacion API | Swagger UI + OpenAPI | `/api-docs` |
+| Testing backend | Jest + Supertest | unit + integration |
+| Testing frontend | Vitest + Testing Library | componentes, hooks y servicios |
 
+## Funcionalidades implementadas
+
+### Autenticacion y seguridad
+
+- Login con JWT.
+- Verificacion de token y cierre de sesion.
+- Cambio de contrasena.
+- Consulta y actualizacion de perfil (`/api/auth/me`).
+- Protected routes en frontend.
+- Inyeccion automatica del token en Axios.
+- Roles y autorizacion por endpoint.
+- Helmet, CORS configurable, compresion y request logging.
+- Swagger disponible en `http://localhost:3000/api-docs`.
+
+### Dashboard y monitoreo
+
+- Tarjetas resumen de servidores, CPU, memoria, disco y disponibilidad.
+- Grafico historico de metricas.
+- Auto refresh periodico.
+- Vista unificada de 7 entidades sembradas por defecto:
+  - `srv-app-01`
+  - `srv-app-02`
+  - `srv-db-01`
+  - `srv-web-01`
+  - `srv-cache-01`
+  - `spi-gateway`
+  - `atc-gateway`
+- Dashboard de Grafana embebido en la pagina principal.
+- Consulta separada de metricas nacionales para SPI y ATC.
+
+### Gestion de servidores
+
+- CRUD de servidores.
+- Modal de alta y edicion.
+- Estados visuales `online`, `offline`, `degraded`, `unknown`.
+- Consulta de estado y metricas por servidor desde la API.
+
+### Alertas y tiempo real
+
+- Vista de alertas activas.
+- Vista de historial completo.
+- Configuracion de thresholds globales o por servidor.
+- Acknowledge y resolve de alertas.
+- Evaluacion automatica de thresholds desde el backend.
+- WebSocket autenticado para eventos en tiempo real.
+- Indicador de conexion realtime en el layout.
+- Toasts y puente de alertas en frontend.
+
+### Reportes
+
+- Generacion de reportes `daily`, `weekly`, `monthly` y `asfi`.
+- Seleccion de rango de fechas.
+- Filtro opcional por servidores.
+- Descarga de PDF.
+- Listado e historial de reportes generados.
+- Estadisticas de reportes desde la API.
+
+### Monitoreo externo con Prometheus y Grafana
+
+- `prometheus/prometheus.yml` configurado con jobs para backend y exporters mock.
+- `grafana/provisioning/` con datasource y dashboard provisionados.
+- Exporters mock incluidos:
+  - `mock-exporters/spi-exporter`
+  - `mock-exporters/atc-exporter`
+  - `mock-exporters/server-exporter`
+
+## Estructura relevante
+
+```text
+proyecto-especialidad-monitoreo/
+|-- backend/
+|   |-- src/
+|   |   |-- app.ts
+|   |   |-- server.ts
+|   |   |-- config/
+|   |   |-- controllers/
+|   |   |-- database/
+|   |   |-- dtos/
+|   |   |-- middlewares/
+|   |   |-- repositories/
+|   |   |-- routes/
+|   |   |-- services/
+|   |   |-- utils/
+|   |   `-- websocket/
+|   `-- tests/
+|-- frontend/
+|   |-- src/
+|   |   |-- app/
+|   |   |-- contexts/
+|   |   |-- hooks/
+|   |   |-- services/
+|   |   `-- styles/
+|-- grafana/
+|-- prometheus/
+|-- mock-exporters/
+|-- docker-compose.yml
+|-- docker-compose.dev.yml
+`-- monitoring-platform-api.json
 ```
-✅ Fase 1: Setup e Infraestructura         (100%)
-✅ Fase 2: Backend Core                    (100%)
-✅ Fase 3: API REST y Base de Datos        (100%)
-✅ Fase 4: Frontend Base                   (100%)
-✅ Fase 5: Integración Frontend-Backend    (100%)
-✅ Fase 6: Monitoreo Prometheus/Grafana    (funcional)
-🟡 Fase 7: Sistema de Alertas Avanzado     (implementación funcional parcial)
-🟡 Fase 8: Reportes ASFI                   (implementación funcional parcial)
-✅ Fase 9: Testing y QA                    (100%)
-────────────────────────────────────────────────
-AVANCE VALIDADO:
-- Backend y frontend funcionales
-- Suite de pruebas estable y relanzada
-- Cobertura Fase 9 superada en backend y frontend
+
+## Credenciales por defecto
+
+Las seeds crean estos usuarios si no existen:
+
+```text
+ADMIN
+username: admin
+password: admin123
+
+OPERATOR
+username: operator
+password: operator123
 ```
 
-### 📌 Resumen ejecutivo del estado actual
+## Variables de entorno principales
 
-- El **MVP funcional** del sistema ya cubre autenticación, dashboard, servidores, alertas y reportes desde la aplicación.
-- La **Fase 9** quedó validada con cobertura superior a la meta en backend y frontend.
-- La **Fase 6** ya está operativa con Prometheus, Grafana embebido y exporters mock activos en Docker.
-- El dashboard principal ya refleja **7 entidades monitoreadas unificadas**: `spi-gateway`, `atc-gateway` y los 5 `srv-*`.
-- Las **Fases 7-8** siguen funcionales pero todavía requieren consolidación final en SMTP real, enriquecimiento visual de reportes y cierre operativo de algunas capacidades avanzadas.
+El archivo base es `.env.example`.
 
-### ✅ Cobertura validada en Fase 9
+Variables clave:
 
-| Módulo | Statements | Branches | Functions | Lines |
-|--------|------------|----------|-----------|-------|
-| **Backend** | 91.97% | 75.87% | 93.22% | 91.97% |
-| **Frontend** | 93.23% | 75.00% | 92.88% | 93.35% |
+```env
+NODE_ENV=development
+PORT=3000
+DATABASE_PATH=./data/monitoring.db
 
-- Backend: cobertura por encima del objetivo minimo en todas las metricas.
-- Frontend: suite optimizada, ramas elevadas a 75.00% y cobertura final por encima del objetivo de la Fase 9.
+JWT_SECRET=your-super-secret-key-change-in-production-min-32-chars
+JWT_EXPIRATION=1h
 
-## 🚀 Inicio Rápido
+CORS_ALLOWED_ORIGINS=http://localhost,http://localhost:5173
+CORS_ALLOW_CREDENTIALS=true
 
-### Prerrequisitos
+PROMETHEUS_URL=http://prometheus:9090
 
-- Node.js 20+ instalado
-- Puerto 3000 (backend) y 5173 (frontend) disponibles
+SMTP_MODE=emulated
+SMTP_HOST=smtp.example.com
+SMTP_PORT=587
+SMTP_USER=user@example.com
+SMTP_PASS=your-email-password
+SMTP_FROM=noreply@monitoring.com
+SMTP_SECURE=false
+ALERT_EMAIL_TO=admin@monitoring.local
+SMTP_MAX_RETRIES=3
+SMTP_RETRY_DELAY_MS=250
+EMAIL_EMULATION_OUTPUT_DIR=./data/emulated-emails
 
-### Ejecución en Desarrollo
+VITE_API_URL=http://localhost:3000/api
+VITE_WS_URL=http://localhost:3000
+```
+
+### Nota sobre `VITE_WS_URL`
+
+El cliente Socket.IO normaliza la URL automaticamente. Puedes usar:
+
+- `http://localhost:3000`
+- `ws://localhost:3000/ws`
+
+En ambos casos el hook elimina el sufijo `/ws` si aparece y usa internamente `path: '/ws'`.
+
+### Modo SMTP emulado
+
+Si `SMTP_MODE=emulated`, el backend:
+
+- usa `jsonTransport` de Nodemailer
+- no requiere `SMTP_HOST`
+- persiste una copia HTML del correo en `EMAIL_EMULATION_OUTPUT_DIR`
+
+Esto permite probar alertas criticas sin un servidor SMTP real.
+
+## Ejecucion local
+
+### 1. Preparar variables de entorno
+
+PowerShell:
+
+```powershell
+Copy-Item .env.example .env
+```
+
+### 2. Backend
 
 ```bash
-# 1. Clonar el repositorio
-git clone <repository-url>
-cd proyecto-especialidad-monitoreo
-
-# 2. Backend (Terminal 1)
 cd backend
 npm install
 npm run dev
-# ✅ Backend: http://localhost:3000
-# ✅ Swagger: http://localhost:3000/api-docs
+```
 
-# 3. Frontend (Terminal 2)
+Disponible en:
+
+- API: `http://localhost:3000/api`
+- Health: `http://localhost:3000/api/health`
+- Swagger UI: `http://localhost:3000/api-docs`
+- Swagger JSON: `http://localhost:3000/api-docs.json`
+
+### 3. Frontend
+
+```bash
 cd frontend
 npm install
 npm run dev
-# ✅ Frontend: http://localhost:5173
 ```
 
-### Credenciales de Acceso
+Disponible en:
 
-```
-Username: admin
-Password: admin123
-```
+- App: `http://localhost:5173`
 
-### Ejecución con Docker (stack extendido)
+## Ejecucion con Docker
+
+### Desarrollo
 
 ```bash
-# Copiar variables de entorno
-cp .env.example .env
-
-# Levantar todos los servicios
-docker-compose up -d
-
-# Ver logs
-docker-compose logs -f
+docker compose -f docker-compose.dev.yml up --build
 ```
 
-### Acceso a la aplicación
+Servicios expuestos:
 
-- **Frontend**: http://localhost:5173 en desarrollo
-- **Frontend Docker**: http://localhost
-- **Backend API**: http://localhost:3000/api
-- **Prometheus**: http://localhost:9090 al levantar el stack de monitoreo
-- **Grafana**: http://localhost:3001 al levantar el stack de monitoreo
-- **Grafana embebido/proxied**: http://localhost/grafana
+- Frontend dev: `http://localhost:5173`
+- Backend: `http://localhost:3000`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001`
 
-## 📁 Estructura del Proyecto
+### Produccion / stack integrado
 
-```
-proyecto-especialidad-monitoreo/
-├── frontend/          # React + TypeScript
-├── backend/           # Node.js + Express + TypeScript
-├── prometheus/        # Configuración de Prometheus
-├── grafana/           # Dashboards y datasources
-├── mock-exporters/    # Simuladores de métricas
-├── docker-compose.yml
-└── Dockerfile
-```
-
-## 📊 Funcionalidades Implementadas
-
-### ✅ Dashboard (Tiempo Real)
-- ✅ Estado general unificado de 7 entidades monitoreadas
-- ✅ Métricas en tiempo real (CPU, RAM, Disk, Availability)
-- ✅ Gráficos de área con 3 métricas simultáneas
-- ✅ Auto-refresh cada 10 segundos
-- ✅ Panel de alertas activas
-- ✅ Lista de servidores con estados visuales
-- ✅ Dashboard de Grafana embebido mediante `/grafana`
-- ✅ Métricas nacionales separadas para `spi-gateway` y `atc-gateway`
-
-### ✅ Monitoreo Prometheus / Grafana
-- ✅ Exporters mock de `SPI`, `ATC` y `server-exporter` activos
-- ✅ Datasource Prometheus provisionado automáticamente en Grafana
-- ✅ Dashboard principal provisionado desde `grafana/provisioning/dashboards/main-dashboard.json`
-- ✅ Conteos y estado unificados entre backend y dashboard embebido
-- ℹ️ Los gateways `SPI` y `ATC` muestran métricas operativas propias (`TPS`, errores, authorization rate), no CPU/RAM/Disk, porque sus exporters no exponen métricas de infraestructura
-
-### ✅ Gestión de Servidores
-- ✅ CRUD completo (Create, Read, Update, Delete)
-- ✅ Formulario modal de creación/edición
-- ✅ Validación de datos
-- ✅ Estados visuales (online/offline/degraded)
-- ✅ Filtrado por tipo y ambiente
-- ✅ Confirmación de eliminación
-
-### ✅ Sistema de Alertas
-- ✅ 3 vistas: Active Alerts, All Alerts, Thresholds
-- ✅ Configuración de umbrales personalizados
-- ✅ Acknowledge de alertas
-- ✅ Resolución de alertas
-- ✅ Indicadores visuales por severidad (critical/warning/info)
-- ✅ Historial completo de alertas
-- ✅ CRUD de umbrales (Create, Delete)
-- ✅ Auto-refresh cada 10 segundos
-- ✅ WebSocket validado con pruebas de integración autenticadas
-- ✅ Indicador visual de conexión en tiempo real en el header principal
-- 🟡 Base preparada para completar envío SMTP real y extensiones de alertamiento avanzado
-
-### ✅ Reportes ASFI
-- ✅ Generación rápida de reporte ASFI
-- ✅ Reportes personalizados (daily/weekly/monthly)
-- ✅ Selección de rango de fechas
-- ✅ Filtrado por servidores específicos
-- ✅ Descarga de PDFs
-- ✅ Historial de reportes generados
-- ✅ Visualización de metadatos
-- ✅ MTTR y MTBF calculados e incluidos en reportes
-- ✅ Disponibilidad calculada por duración real de incidentes dentro del rango del reporte
-- 🟡 Pendiente de enriquecer los PDFs con gráficos operativos adicionales
-
-### ✅ Autenticación y Seguridad
-- ✅ Login con JWT
-- ✅ Auto-logout en token expirado
-- ✅ Protected routes
-- ✅ Roles y permisos (Admin/Operator/Auditor)
-- ✅ Contraseñas hasheadas (bcrypt)
-- ✅ Logs de auditoría
-
-### ⏳ Pendientes de consolidación
-- ⏳ Activación end-to-end de notificaciones por email con credenciales SMTP reales
-- ⏳ Consolidación del stack de exporters mock dentro del entorno Docker de monitoreo
-- ⏳ Enriquecer reportes con gráficos operativos embebidos
-
-### 📧 Modo SMTP emulado o real
-
-- `SMTP_MODE=emulated`: usa `jsonTransport` y permite probar el flujo de alertas sin un servidor SMTP real.
-- `SMTP_MODE=emulated`: usa `jsonTransport` y además genera un archivo HTML por correo en `EMAIL_EMULATION_OUTPUT_DIR`.
-- `SMTP_MODE=real`: activa el transporte SMTP real y requiere `SMTP_HOST` configurado.
-- Variables relacionadas: `ALERT_EMAIL_TO`, `SMTP_FROM`, `SMTP_MAX_RETRIES`, `SMTP_RETRY_DELAY_MS`, `EMAIL_EMULATION_OUTPUT_DIR`.
-
-### 🔌 Configuración correcta de WebSocket
-
-- `VITE_WS_URL` debe apuntar a la **URL base del backend**, por ejemplo: `http://localhost:3000`
-- No agregues `/ws` en esa variable, porque el cliente Socket.IO ya usa internamente `path: '/ws'`
-- Si configuras `VITE_WS_URL=http://localhost:3000/ws`, el cliente puede intentar entrar al namespace `/ws` y devolver `Invalid namespace`
-
-### 🌐 Configuración de CORS por entorno
-
-- El backend HTTP y el WebSocket leen los orígenes permitidos desde `CORS_ALLOWED_ORIGINS`
-- Puedes definir uno o varios orígenes separados por comas, por ejemplo: `CORS_ALLOWED_ORIGINS=http://localhost,http://localhost:5173`
-- `CORS_ALLOW_CREDENTIALS=true` mantiene habilitado el envío de credenciales/autorización
-- Si cambias estos valores en Docker, reconstruye o reinicia el servicio backend para aplicar la nueva política
-
-## 🔐 Seguridad
-
-- Autenticación JWT con expiración
-- Contraseñas hasheadas con bcrypt
-- HTTPS/TLS para comunicación
-- Headers de seguridad (CSP, X-Frame-Options, HSTS)
-- Logs de auditoría
-
-## Endpoints implementados
-
-- AUTH
-- POST   /api/auth/login
-- POST   /api/auth/register
-- GET    /api/auth/verify
-- POST   /api/auth/logout
-- POST   /api/auth/change-password
-- GET    /api/auth/me
-
-- SERVERS
-- GET    /api/servers
-- GET    /api/servers/:id
-- POST   /api/servers (admin only)
-- PUT    /api/servers/:id (admin only)
-- DELETE /api/servers/:id (admin only)
-- GET    /api/servers/:id/status
-- GET    /api/servers/:id/metrics
-
-- ALERTS
-- GET    /api/alerts
-- GET    /api/alerts/active
-- GET    /api/alerts/:id
-- PUT    /api/alerts/:id/acknowledge
-- PUT    /api/alerts/:id/resolve
-- GET    /api/alerts/thresholds
-- POST   /api/alerts/thresholds (admin only)
-- PUT    /api/alerts/thresholds/:id (admin only)
-- DELETE /api/alerts/thresholds/:id (admin only)
-
-- METRICS
-- GET    /api/metrics
-- GET    /api/metrics/summary
-- GET    /api/metrics/history
-- GET    /api/metrics/history/:serverId
-- GET    /api/metrics/prometheus
-
-- REPORTS
-- GET    /api/reports
-- GET    /api/reports/statistics
-- GET    /api/reports/:id
-- GET    /api/reports/:id/download
-- POST   /api/reports/generate (admin/operator)
-- POST   /api/reports/generate/asfi (admin/operator)
-- DELETE /api/reports/:id (admin only)
-
-## 🎯 Guía de Testing Rápida
-
-### 1. Iniciar Aplicación
 ```bash
-# Terminal 1: Backend
-cd backend && npm run dev
-
-# Terminal 2: Frontend  
-cd frontend && npm run dev
+docker compose up -d --build
 ```
 
-### 2. Acceder
-- URL: http://localhost:5173/login
-- User: `admin`
-- Pass: `admin123`
+Servicios expuestos:
 
-### 3. Probar Flujo Completo
-1. ✅ Login → Dashboard
-2. ✅ Servers → Crear/Editar/Eliminar servidor
-3. ✅ Alerts → Ver alertas, crear threshold, acknowledge/resolve
-4. ✅ Reports → Generar reporte ASFI, descargar PDF
-5. ✅ Logout
+- Frontend: `http://localhost`
+- Backend API: `http://localhost:3000/api`
+- Prometheus: `http://localhost:9090`
+- Grafana: `http://localhost:3001`
+- Grafana proxied: `http://localhost/grafana`
 
-## 🔧 Comandos Útiles
+## Endpoints principales
+
+### Auth
+
+- `POST /api/auth/login`
+- `POST /api/auth/register`
+- `GET /api/auth/verify`
+- `POST /api/auth/logout`
+- `POST /api/auth/change-password`
+- `GET /api/auth/me`
+- `PUT /api/auth/me`
+
+### Servers
+
+- `GET /api/servers`
+- `GET /api/servers/:id`
+- `POST /api/servers`
+- `PUT /api/servers/:id`
+- `DELETE /api/servers/:id`
+- `GET /api/servers/:id/status`
+- `GET /api/servers/:id/metrics`
+
+### Metrics
+
+- `GET /api/metrics`
+- `GET /api/metrics/summary`
+- `GET /api/metrics/history`
+- `GET /api/metrics/history/:serverId`
+- `GET /api/metrics/spi`
+- `GET /api/metrics/atc`
+- `GET /api/metrics/server/:serverId`
+- `GET /api/metrics/prometheus`
+
+### Alerts
+
+- `GET /api/alerts`
+- `GET /api/alerts/active`
+- `GET /api/alerts/:id`
+- `GET /api/alerts/thresholds`
+- `POST /api/alerts/thresholds`
+- `PUT /api/alerts/thresholds/:id`
+- `DELETE /api/alerts/thresholds/:id`
+- `PUT /api/alerts/:id/acknowledge`
+- `PUT /api/alerts/:id/resolve`
+
+### Reports
+
+- `GET /api/reports`
+- `GET /api/reports/statistics`
+- `GET /api/reports/:id`
+- `GET /api/reports/:id/download`
+- `POST /api/reports/generate`
+- `POST /api/reports/generate/asfi`
+- `DELETE /api/reports/:id`
+
+## Scripts utiles
+
+### Backend
+
+```bash
+npm run dev
+npm run build
+npm run start
+npm run lint
+npm run lint:fix
+npm run test
+npm run test:watch
+npm run test:coverage
+npm run migration:run
+npm run seed
+```
+
+### Frontend
+
+```bash
+npm run dev
+npm run build
+npm run preview
+npm run lint
+npm run lint:fix
+npm run test
+npm run test:watch
+npm run test:coverage
+```
+
+## Testing actual
+
+El repositorio ya incluye suites activas en ambos lados:
+
+- Backend: 25 archivos de prueba entre unit e integration.
+- Frontend: 23 archivos de prueba para paginas, componentes, hooks y servicios.
+
+Comandos recomendados:
 
 ```bash
 # Backend
-npm run dev          # Desarrollo con hot-reload
-npm run build        # Compilar TypeScript
-npm run start        # Producción
-npm run test         # Ejecutar tests
-npm run lint         # Linter
+cd backend
+npm run test
+npm run test:coverage
 
 # Frontend
-npm run dev          # Desarrollo con Vite
-npm run build        # Build para producción
-npm run preview      # Preview del build
-npm run lint         # Linter
+cd frontend
+npm run test
+npm run test:coverage
 ```
 
-## 📝 Licencia
+## Base de datos
 
-Proyecto académico - Universidad Católica Boliviana "San Pablo"
+SQLite se inicializa automaticamente al levantar el backend.
 
-## 👤 Autor
+Migraciones actuales:
+
+- `001_initial`
+- `002_seed_data`
+- `003_reports_update`
+
+Tablas principales:
+
+- `users`
+- `roles`
+- `user_roles`
+- `servers`
+- `alert_thresholds`
+- `alerts`
+- `reports`
+- `audit_logs`
+- `metrics_cache`
+- `migrations`
+
+## Rutas frontend actuales
+
+- `/login`
+- `/`
+- `/servers`
+- `/alerts`
+- `/reports`
+
+## Archivos de referencia utiles
+
+- `CHECKLIST_PRUEBAS.md`
+- `GUIA_RAPIDA_TESTING.md`
+- `FASE_5_COMPLETADA.md`
+- `monitoring-platform-api.json`
+
+## Licencia
+
+Proyecto academico. El `backend/package.json` declara licencia `MIT`.
+
+## Autor
 
 **Jorge Siles Zepita**  
-Maestría en Full Stack Development - 2026
+Maestria en Full Stack Development - 2026
