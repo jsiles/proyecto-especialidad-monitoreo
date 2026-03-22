@@ -1,7 +1,7 @@
 {
-  "name": "atc-exporter",
+  "name": "linkser-exporter",
   "version": "1.0.0",
-  "description": "Mock exporter for ATC",
+  "description": "Mock exporter for Linkser debit and credit cards",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"

@@ -11,7 +11,7 @@ export interface Server {
   id: string;
   name: string;
   ip_address: string;
-  type: 'application' | 'database' | 'web' | 'cache' | 'spi' | 'atc' | 'other';
+  type: 'application' | 'database' | 'web' | 'cache' | 'spi' | 'atc' | 'linkser' | 'other';
   environment: 'production' | 'staging' | 'development' | 'testing';
   status?: 'online' | 'offline' | 'degraded' | 'unknown';
   created_at: string;

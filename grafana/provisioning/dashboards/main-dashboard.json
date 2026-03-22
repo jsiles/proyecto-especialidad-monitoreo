@@ -230,7 +230,7 @@
       "pluginVersion": "10.2.0",
       "targets": [
         {
-          "expr": "label_replace(max by (server) (server_uptime_seconds > bool 0), \"target\", \"$1\", \"server\", \"(.*)\") or label_replace(spi_service_up, \"target\", \"spi-gateway\", \"__name__\", \".*\") or label_replace(atc_service_up, \"target\", \"atc-gateway\", \"__name__\", \".*\")",
+          "expr": "label_replace(max by (server) (server_uptime_seconds > bool 0), \"target\", \"$1\", \"server\", \"(.*)\") or label_replace(spi_service_up, \"target\", \"spi-gateway\", \"__name__\", \".*\") or label_replace(atc_service_up, \"target\", \"atc-gateway\", \"__name__\", \".*\") or label_replace(linkser_service_up, \"target\", \"linkser-gateway\", \"__name__\", \".*\")",
           "legendFormat": "{{target}}",
           "refId": "A"
         }

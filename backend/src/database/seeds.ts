@@ -52,13 +52,6 @@ export async function seedUsers(): Promise<void> {
  */
 export function seedServers(): void {
   const db = getDatabase();
-  
-  // Check if servers exist
-  const count = db.prepare('SELECT COUNT(*) as count FROM servers').get() as { count: number };
-  if (count.count > 0) {
-    logger.info('Servers already exist, skipping seed');
-    return;
-  }
 
   const now = new Date().toISOString();
   const servers = [
@@ -69,19 +62,36 @@ export function seedServers(): void {
     { name: 'srv-cache-01', ip_address: '192.168.1.40', type: 'cache', environment: 'production' },
     { name: 'spi-gateway', ip_address: '10.0.0.100', type: 'spi', environment: 'production' },
     { name: 'atc-gateway', ip_address: '10.0.0.101', type: 'atc', environment: 'production' },
+    { name: 'linkser-gateway', ip_address: '10.0.0.102', type: 'linkser', environment: 'production' },
   ];
 
   const stmt = db.prepare(`
     INSERT INTO servers (id, name, ip_address, type, environment, status, created_at)
     VALUES (?, ?, ?, ?, ?, 'unknown', ?)
   `);
+  const existingServerNames = new Set(
+    (
+      db.prepare('SELECT name FROM servers').all() as Array<{ name: string }>
+    ).map((server) => server.name)
+  );
+  let insertedCount = 0;
 
   for (const server of servers) {
+    if (existingServerNames.has(server.name)) {
+      continue;
+    }
+
     const id = uuidv4();
     stmt.run(id, server.name, server.ip_address, server.type, server.environment, now);
+    insertedCount += 1;
   }
 
-  logger.info('Servers seeded successfully', { count: servers.length });
+  if (insertedCount === 0) {
+    logger.info('Default servers already exist, skipping seed');
+    return;
+  }
+
+  logger.info('Servers seeded successfully', { count: insertedCount });
 }
 
 /**

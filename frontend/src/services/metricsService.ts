@@ -58,6 +58,14 @@ export interface ATCMetrics {
   authorizationRate: number;
 }
 
+export interface LinkserMetrics {
+  serviceUp: number;
+  transactionsPerSecond: number;
+  authorizationRate: number;
+  activeDebitCards: number;
+  activeCreditCards: number;
+}
+
 // ==================== METRICS SERVICE ====================
 
 export const metricsService = {
@@ -172,6 +180,11 @@ export const metricsService = {
 
   async getATCMetrics(): Promise<ATCMetrics> {
     const response = await api.get<ApiResponse<ATCMetrics>>('/metrics/atc');
+    return response.data.data;
+  },
+
+  async getLinkserMetrics(): Promise<LinkserMetrics> {
+    const response = await api.get<ApiResponse<LinkserMetrics>>('/metrics/linkser');
     return response.data.data;
   },
 };

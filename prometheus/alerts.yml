@@ -101,5 +101,16 @@ groups:
           compliance: asfi_362
           system: atc
         annotations:
-          summary: "Sistema ATC/Linkser no disponible"
+          summary: "Sistema ATC no disponible"
           description: "El sistema ATC no responde"
+
+      - alert: LinkserUnavailable
+        expr: linkser_service_up == 0
+        for: 30s
+        labels:
+          severity: critical
+          compliance: asfi_362
+          system: linkser
+        annotations:
+          summary: "Sistema Linkser no disponible"
+          description: "El servicio Linkser de tarjetas de debito y credito no responde"

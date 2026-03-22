@@ -14,7 +14,7 @@ export interface Server {
   updated_at: string;
 }
 
-export type ServerType = 'application' | 'database' | 'web' | 'cache' | 'spi' | 'atc' | 'other';
+export type ServerType = 'application' | 'database' | 'web' | 'cache' | 'spi' | 'atc' | 'linkser' | 'other';
 
 export type ServerEnvironment = 'production' | 'staging' | 'development' | 'testing';
 

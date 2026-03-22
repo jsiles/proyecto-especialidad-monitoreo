@@ -189,6 +189,25 @@ describe('PrometheusService (unit)', () => {
         authorizationRate: 0.97,
       });
     });
+
+    it('parses Linkser metrics into a summary object', async () => {
+      mockClient.get
+        .mockResolvedValueOnce(instantResponse('1'))
+        .mockResolvedValueOnce(instantResponse('95.4'))
+        .mockResolvedValueOnce(instantResponse('0.96'))
+        .mockResolvedValueOnce(instantResponse('220000'))
+        .mockResolvedValueOnce(instantResponse('105000'));
+
+      const result = await service.getLinkserMetrics();
+
+      expect(result).toEqual({
+        serviceUp: 1,
+        transactionsPerSecond: 95.4,
+        authorizationRate: 0.96,
+        activeDebitCards: 220000,
+        activeCreditCards: 105000,
+      });
+    });
   });
 
   describe('healthCheck', () => {

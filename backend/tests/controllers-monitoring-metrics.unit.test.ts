@@ -21,14 +21,15 @@ jest.mock('../src/services/MonitoringService', () => ({
 
 jest.mock('../src/services/PrometheusService', () => ({
   __esModule: true,
-  default: {
-    getCurrentMetrics: jest.fn(),
-    getServerMetricsHistory: jest.fn(),
-    getSPIMetrics: jest.fn(),
-    getATCMetrics: jest.fn(),
-    query: jest.fn(),
-    queryRange: jest.fn(),
-    healthCheck: jest.fn(),
+    default: {
+      getCurrentMetrics: jest.fn(),
+      getServerMetricsHistory: jest.fn(),
+      getSPIMetrics: jest.fn(),
+      getATCMetrics: jest.fn(),
+      getLinkserMetrics: jest.fn(),
+      query: jest.fn(),
+      queryRange: jest.fn(),
+      healthCheck: jest.fn(),
   },
 }));
 
@@ -371,6 +372,28 @@ describe('MetricsController (unit)', () => {
       mockPrometheus.getATCMetrics.mockRejectedValue(new Error('fail'));
 
       await ctrl.getATCMetrics(req, res, next);
+
+      expect(next).toHaveBeenCalled();
+    });
+  });
+
+  describe('getLinkserMetrics', () => {
+    it('returns Linkser metrics', async () => {
+      const { req, res, next } = makeMocks();
+      mockPrometheus.getLinkserMetrics.mockResolvedValue({ status: 'up' } as any);
+
+      await ctrl.getLinkserMetrics(req, res, next);
+
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({ success: true, meta: expect.objectContaining({ system: 'LINKSER' }) })
+      );
+    });
+
+    it('calls next on error', async () => {
+      const { req, res, next } = makeMocks();
+      mockPrometheus.getLinkserMetrics.mockRejectedValue(new Error('fail'));
+
+      await ctrl.getLinkserMetrics(req, res, next);
 
       expect(next).toHaveBeenCalled();
     });

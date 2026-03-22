@@ -233,6 +233,7 @@ export function ServersPage() {
                       <option value="database">Database</option>
                       <option value="web">Web Server</option>
                       <option value="cache">Cache Server</option>
+                      <option value="linkser">Linkser Gateway</option>
                       <option value="queue">Queue Server</option>
                       <option value="other">Other</option>
                     </select>

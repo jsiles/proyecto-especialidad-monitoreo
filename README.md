@@ -14,7 +14,7 @@ Este README refleja el estado real del codigo actual del repositorio.
 
 - Backend API funcional con JWT, roles, Swagger, SQLite y WebSocket.
 - Frontend funcional con login, dashboard, servidores, alertas y reportes.
-- Monitoreo operativo con Prometheus, Grafana embebido y exporters mock de SPI, ATC y servidores.
+- Monitoreo operativo con Prometheus, Grafana embebido y exporters mock de SPI, ATC, Linkser y servidores.
 - Alertas con thresholds, acknowledge, resolve y notificaciones en tiempo real.
 - Reportes PDF y reporte ASFI disponibles desde la UI y la API.
 - Testing implementado en backend y frontend, con scripts de coverage incluidos.
@@ -59,7 +59,7 @@ Este README refleja el estado real del codigo actual del repositorio.
 - Tarjetas resumen de servidores, CPU, memoria, disco y disponibilidad.
 - Grafico historico de metricas.
 - Auto refresh periodico.
-- Vista unificada de 7 entidades sembradas por defecto:
+- Vista unificada de 8 entidades sembradas por defecto:
   - `srv-app-01`
   - `srv-app-02`
   - `srv-db-01`
@@ -67,8 +67,9 @@ Este README refleja el estado real del codigo actual del repositorio.
   - `srv-cache-01`
   - `spi-gateway`
   - `atc-gateway`
+  - `linkser-gateway`
 - Dashboard de Grafana embebido en la pagina principal.
-- Consulta separada de metricas nacionales para SPI y ATC.
+- Consulta separada de metricas nacionales para SPI, ATC y Linkser.
 
 ### Gestion de servidores
 
@@ -104,6 +105,7 @@ Este README refleja el estado real del codigo actual del repositorio.
 - Exporters mock incluidos:
   - `mock-exporters/spi-exporter`
   - `mock-exporters/atc-exporter`
+  - `mock-exporters/linkser-exporter`
   - `mock-exporters/server-exporter`
 
 ## Estructura relevante
@@ -304,6 +306,7 @@ Servicios expuestos:
 - `GET /api/metrics/history/:serverId`
 - `GET /api/metrics/spi`
 - `GET /api/metrics/atc`
+- `GET /api/metrics/linkser`
 - `GET /api/metrics/server/:serverId`
 - `GET /api/metrics/prometheus`
 

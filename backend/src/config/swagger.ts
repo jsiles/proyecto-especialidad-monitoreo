@@ -140,7 +140,7 @@ Obtén un token usando el endpoint POST /api/auth/login
           },
           type: {
             type: 'string',
-            enum: ['application', 'database', 'web', 'cache', 'spi', 'atc', 'other'],
+            enum: ['application', 'database', 'web', 'cache', 'spi', 'atc', 'linkser', 'other'],
             example: 'application',
           },
           environment: {
@@ -531,6 +531,36 @@ Obtén un token usando el endpoint POST /api/auth/login
             type: 'number',
             format: 'float',
             example: 0.98,
+          },
+        },
+      },
+      LinkserMetrics: {
+        type: 'object',
+        properties: {
+          serviceUp: {
+            type: 'number',
+            format: 'float',
+            example: 1,
+          },
+          transactionsPerSecond: {
+            type: 'number',
+            format: 'float',
+            example: 64.8,
+          },
+          authorizationRate: {
+            type: 'number',
+            format: 'float',
+            example: 0.96,
+          },
+          activeDebitCards: {
+            type: 'number',
+            format: 'float',
+            example: 210000,
+          },
+          activeCreditCards: {
+            type: 'number',
+            format: 'float',
+            example: 98000,
           },
         },
       },

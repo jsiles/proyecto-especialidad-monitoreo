@@ -38,12 +38,21 @@ scrape_configs:
           criticality: 'high'
           service_type: 'national_system'
 
-  # ----- ATC/Linkser Exporter -----
+  # ----- ATC Exporter -----
   - job_name: 'atc-exporter'
     static_configs:
       - targets: ['atc-exporter:9100']
         labels:
           system: 'atc'
+          criticality: 'high'
+          service_type: 'national_system'
+
+  # ----- Linkser Exporter -----
+  - job_name: 'linkser-exporter'
+    static_configs:
+      - targets: ['linkser-exporter:9100']
+        labels:
+          system: 'linkser'
           criticality: 'high'
           service_type: 'national_system'
 

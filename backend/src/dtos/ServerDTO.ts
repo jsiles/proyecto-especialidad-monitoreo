@@ -51,7 +51,7 @@ export interface ServerQueryDTO {
 }
 
 // Valid server types and environments for validation
-const VALID_TYPES: ServerType[] = ['application', 'database', 'web', 'cache', 'spi', 'atc', 'other'];
+const VALID_TYPES: ServerType[] = ['application', 'database', 'web', 'cache', 'spi', 'atc', 'linkser', 'other'];
 const VALID_ENVIRONMENTS: ServerEnvironment[] = ['production', 'staging', 'development', 'testing'];
 const VALID_STATUSES: ServerStatus[] = ['online', 'offline', 'degraded', 'unknown'];
 

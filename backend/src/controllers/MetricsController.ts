@@ -116,6 +116,27 @@ export class MetricsController {
   }
 
   /**
+   * GET /api/metrics/linkser - Obtener métricas de Linkser
+   */
+  async getLinkserMetrics(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const metrics = await prometheusService.getLinkserMetrics();
+
+      res.json({
+        success: true,
+        data: metrics,
+        meta: {
+          timestamp: new Date().toISOString(),
+          system: 'LINKSER',
+        },
+      });
+    } catch (error: any) {
+      logger.error('Error getting Linkser metrics', { error: error.message });
+      next(error);
+    }
+  }
+
+  /**
    * POST /api/metrics/query - Ejecutar consulta personalizada de Prometheus
    */
   async executeQuery(req: Request, res: Response, next: NextFunction): Promise<void> {

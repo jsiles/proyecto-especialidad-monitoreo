@@ -132,6 +132,17 @@ services:
       - monitoring-network
     restart: unless-stopped
 
+  linkser-exporter:
+    build:
+      context: ./mock-exporters/linkser-exporter
+      dockerfile: Dockerfile
+    container_name: monitoring-linkser-exporter
+    ports:
+      - "9104:9100"
+    networks:
+      - monitoring-network
+    restart: unless-stopped
+
   server-exporter:
     build:
       context: ./mock-exporters/server-exporter

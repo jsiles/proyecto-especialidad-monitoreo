@@ -14,8 +14,8 @@ const metrics = [
 ];
 
 const summary = {
-  total_servers: 3,
-  servers_online: 2,
+  total_servers: 4,
+  servers_online: 3,
   servers_offline: 1,
   average_cpu: 45,
   average_memory: 62,
@@ -52,12 +52,20 @@ const servers = [
     ip_address: '10.0.0.101',
     type: 'atc',
   },
+  {
+    id: 'srv-linkser',
+    name: 'linkser-gateway',
+    status: 'online',
+    ip_address: '10.0.0.102',
+    type: 'linkser',
+  },
 ];
 
-const { fetchMetrics, getSPIMetrics, getATCMetrics } = vi.hoisted(() => ({
+const { fetchMetrics, getSPIMetrics, getATCMetrics, getLinkserMetrics } = vi.hoisted(() => ({
   fetchMetrics: vi.fn(),
   getSPIMetrics: vi.fn(),
   getATCMetrics: vi.fn(),
+  getLinkserMetrics: vi.fn(),
 }));
 
 // Mock date-fns to avoid heavy module loading
@@ -114,6 +122,7 @@ vi.mock('../../services/metricsService', () => ({
   default: {
     getSPIMetrics,
     getATCMetrics,
+    getLinkserMetrics,
   },
 }));
 
@@ -130,6 +139,13 @@ describe('Dashboard page', () => {
       transactionsPerSecond: 21.43,
       authorizationRate: 0.97,
     });
+    getLinkserMetrics.mockResolvedValue({
+      serviceUp: 1,
+      transactionsPerSecond: 18.75,
+      authorizationRate: 0.96,
+      activeDebitCards: 220000,
+      activeCreditCards: 105000,
+    });
   });
 
   it('renders summary cards from hook data', () => {
@@ -140,7 +156,7 @@ describe('Dashboard page', () => {
     expect(screen.getByText('CPU Average')).toBeInTheDocument();
     expect(screen.getByText('Memory Average')).toBeInTheDocument();
     expect(screen.getByText('Availability')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getByText('4')).toBeInTheDocument();
   });
 
   it('renders active alerts section with alert message', () => {
@@ -164,23 +180,28 @@ describe('Dashboard page', () => {
     expect(screen.getByRole('link', { name: 'Open Grafana' })).toHaveAttribute('href', '/grafana/');
   });
 
-  it('renders SPI and ATC sections', async () => {
+  it('renders SPI, ATC and Linkser sections', async () => {
     render(<Dashboard />);
 
     expect(await screen.findByText('SPI Metrics')).toBeInTheDocument();
     expect(await screen.findByText('ATC Metrics')).toBeInTheDocument();
-    expect(await screen.findAllByText('UP')).toHaveLength(2);
+    expect(await screen.findByText('Linkser Metrics')).toBeInTheDocument();
+    expect(await screen.findAllByText('UP')).toHaveLength(3);
     expect(await screen.findByText('12.34')).toBeInTheDocument();
     expect(await screen.findByText('21.43')).toBeInTheDocument();
+    expect(await screen.findByText('18.75')).toBeInTheDocument();
   });
 
-  it('renders SPI and ATC gateway stats in monitored servers', async () => {
+  it('renders SPI, ATC and Linkser gateway stats in monitored servers', async () => {
     render(<Dashboard />);
 
     expect(await screen.findByText('spi-gateway')).toBeInTheDocument();
     expect(await screen.findByText('atc-gateway')).toBeInTheDocument();
-    expect(await screen.findAllByText('TPS')).toHaveLength(3);
+    expect(await screen.findByText('linkser-gateway')).toBeInTheDocument();
+    expect(await screen.findAllByText('TPS')).toHaveLength(4);
     expect(await screen.findByText('Failed/s')).toBeInTheDocument();
     expect(await screen.findByText('Auth')).toBeInTheDocument();
+    expect(await screen.findByText('Debit')).toBeInTheDocument();
+    expect(await screen.findByText('Credit')).toBeInTheDocument();
   });
 });

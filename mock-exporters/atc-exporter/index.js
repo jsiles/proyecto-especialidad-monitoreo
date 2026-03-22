@@ -1,5 +1,5 @@
 /**
- * ATC/Linkser Exporter - Simulador de Tarjetas de Crédito/Débito
+ * ATC Exporter - Simulador de procesamiento ATC
  * Expone métricas en formato Prometheus
  */
 

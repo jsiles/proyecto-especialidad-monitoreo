@@ -77,7 +77,7 @@ export class MonitoringService {
     try {
       let metricsSnapshot: ServerMetricsDTO;
 
-      if (server.type === 'spi' || server.type === 'atc') {
+      if (server.type === 'spi' || server.type === 'atc' || server.type === 'linkser') {
         metricsSnapshot = await this.getNationalSystemMetrics(serverId, name, server.type, server.status);
       } else {
         // Query Prometheus for server metrics
@@ -157,20 +157,32 @@ export class MonitoringService {
   private async getNationalSystemMetrics(
     serverId: string,
     serverName: string,
-    serverType: 'spi' | 'atc',
+    serverType: 'spi' | 'atc' | 'linkser',
     currentStatus: ServerStatus
   ): Promise<ServerMetricsDTO> {
-    const isSPI = serverType === 'spi';
+    const nationalSystemQueries = {
+      spi: {
+        serviceUp: 'spi_service_up',
+        primaryMetric: 'sum(rate(spi_transactions_total[5m]))',
+        secondaryMetric: 'sum(rate(spi_transactions_failed_total[5m]))',
+      },
+      atc: {
+        serviceUp: 'atc_service_up',
+        primaryMetric: 'sum(rate(atc_transactions_total[5m]))',
+        secondaryMetric: 'atc_authorization_rate',
+      },
+      linkser: {
+        serviceUp: 'linkser_service_up',
+        primaryMetric: 'sum(rate(linkser_card_transactions_total[5m]))',
+        secondaryMetric: 'linkser_authorization_rate',
+      },
+    } as const;
+
+    const queries = nationalSystemQueries[serverType];
     const [serviceUpResult, primaryMetricResult, secondaryMetricResult] = await Promise.all([
-      this.queryPrometheus(isSPI ? 'spi_service_up' : 'atc_service_up'),
-      this.queryPrometheus(
-        isSPI ? 'sum(rate(spi_transactions_total[5m]))' : 'sum(rate(atc_transactions_total[5m]))'
-      ),
-      this.queryPrometheus(
-        isSPI
-          ? 'sum(rate(spi_transactions_failed_total[5m]))'
-          : 'atc_authorization_rate'
-      ),
+      this.queryPrometheus(queries.serviceUp),
+      this.queryPrometheus(queries.primaryMetric),
+      this.queryPrometheus(queries.secondaryMetric),
     ]);
 
     const serviceUp = this.extractValue(serviceUpResult);
@@ -455,7 +467,8 @@ export class MonitoringService {
 
     for (const sm of serverMetrics) {
       const server = serverRepository.findById(sm.server_id);
-      const isResourceServer = server?.type !== 'spi' && server?.type !== 'atc';
+      const isResourceServer =
+        server?.type !== 'spi' && server?.type !== 'atc' && server?.type !== 'linkser';
 
       if (isResourceServer && (sm.status === 'online' || sm.status === 'degraded')) {
         totalCpu += sm.metrics.cpu;

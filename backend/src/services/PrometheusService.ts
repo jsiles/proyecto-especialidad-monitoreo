@@ -40,6 +40,14 @@ export interface MetricData {
   status: 'online' | 'offline' | 'degraded';
 }
 
+export interface LinkserMetrics {
+  serviceUp: number;
+  transactionsPerSecond: number;
+  authorizationRate: number;
+  activeDebitCards: number;
+  activeCreditCards: number;
+}
+
 export class PrometheusService {
   private client: AxiosInstance;
   private prometheusUrl: string;
@@ -312,6 +320,46 @@ export class PrometheusService {
       };
     } catch (error: any) {
       logger.error('Error getting ATC metrics', { error: error.message });
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener métricas de Linkser
+   */
+  async getLinkserMetrics(): Promise<LinkserMetrics> {
+    try {
+      const queries = {
+        serviceUp: 'linkser_service_up',
+        transactionsTotal: 'sum(rate(linkser_card_transactions_total[5m]))',
+        authorizationRate: 'linkser_authorization_rate',
+        activeDebitCards: 'linkser_active_cards{card_type="debit"}',
+        activeCreditCards: 'linkser_active_cards{card_type="credit"}',
+      };
+
+      const [
+        serviceUp,
+        transactionsTotal,
+        authorizationRate,
+        activeDebitCards,
+        activeCreditCards,
+      ] = await Promise.all([
+        this.query(queries.serviceUp),
+        this.query(queries.transactionsTotal),
+        this.query(queries.authorizationRate),
+        this.query(queries.activeDebitCards),
+        this.query(queries.activeCreditCards),
+      ]);
+
+      return {
+        serviceUp: parseFloat(serviceUp.data.result[0]?.value?.[1] || '0'),
+        transactionsPerSecond: parseFloat(transactionsTotal.data.result[0]?.value?.[1] || '0'),
+        authorizationRate: parseFloat(authorizationRate.data.result[0]?.value?.[1] || '0'),
+        activeDebitCards: parseFloat(activeDebitCards.data.result[0]?.value?.[1] || '0'),
+        activeCreditCards: parseFloat(activeCreditCards.data.result[0]?.value?.[1] || '0'),
+      };
+    } catch (error: any) {
+      logger.error('Error getting Linkser metrics', { error: error.message });
       throw error;
     }
   }

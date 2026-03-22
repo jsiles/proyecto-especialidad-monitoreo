@@ -59,6 +59,7 @@ describe('MonitoringService (unit, axios mocked)', () => {
   let createdServerId: string;
   let spiServerId: string;
   let atcServerId: string;
+  let linkserServerId: string;
 
   // Create a real server directly in the test DB so service can look it up
   beforeAll(() => {
@@ -84,16 +85,24 @@ describe('MonitoringService (unit, axios mocked)', () => {
       type: 'atc',
       environment: 'testing',
     }).id;
+
+    linkserServerId = serverRepository.create({
+      name: `linkser-unit-${Date.now().toString(36)}`,
+      ip_address: '10.0.0.102',
+      type: 'linkser',
+      environment: 'testing',
+    }).id;
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
     mockedAxios.get.mockReset();
     const db = getDatabase();
-    db.prepare('DELETE FROM metrics_cache WHERE server_id IN (?, ?, ?)').run(
+    db.prepare('DELETE FROM metrics_cache WHERE server_id IN (?, ?, ?, ?)').run(
       createdServerId,
       spiServerId,
-      atcServerId
+      atcServerId,
+      linkserServerId
     );
   });
 
@@ -261,6 +270,19 @@ describe('MonitoringService (unit, axios mocked)', () => {
     expect(metrics.status).toBe('offline');
     expect(metrics.metrics.network_in).toBe(9.1);
     expect(metrics.metrics.network_out).toBe(0.97);
+  });
+
+  it('getServerMetrics: marks linkser gateway online using linkser_service_up', async () => {
+    mockedAxios.get
+      .mockResolvedValueOnce(prometheusInstant('1'))
+      .mockResolvedValueOnce(prometheusInstant('14.2'))
+      .mockResolvedValueOnce(prometheusInstant('0.95'));
+
+    const metrics = await monitoringService.getServerMetrics(linkserServerId);
+
+    expect(metrics.status).toBe('online');
+    expect(metrics.metrics.network_in).toBe(14.2);
+    expect(metrics.metrics.network_out).toBe(0.95);
   });
 
   it('getServerMetrics: creates threshold alert when value exceeds threshold and no duplicate exists', async () => {

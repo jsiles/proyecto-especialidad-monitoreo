@@ -4,7 +4,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { useMetrics } from "../../hooks/useMetrics";
 import { useAlerts } from "../../hooks/useAlerts";
 import { useServers } from "../../hooks/useServers";
-import metricsService, { type ATCMetrics, type SPIMetrics } from "../../services/metricsService";
+import metricsService, { type ATCMetrics, type LinkserMetrics, type SPIMetrics } from "../../services/metricsService";
 import { format } from "date-fns";
 
 const grafanaBaseUrl = (import.meta.env.VITE_GRAFANA_URL || "/grafana").replace(/\/$/, "");
@@ -21,6 +21,7 @@ export function Dashboard() {
   const [historicalData, setHistoricalData] = useState<any[]>([]);
   const [spiMetrics, setSpiMetrics] = useState<SPIMetrics | null>(null);
   const [atcMetrics, setAtcMetrics] = useState<ATCMetrics | null>(null);
+  const [linkserMetrics, setLinkserMetrics] = useState<LinkserMetrics | null>(null);
   const [nationalSystemsLoading, setNationalSystemsLoading] = useState(false);
 
   // Calcular promedios de las métricas
@@ -56,9 +57,10 @@ export function Dashboard() {
     const fetchNationalSystems = async () => {
       setNationalSystemsLoading(true);
       try {
-        const [spi, atc] = await Promise.all([
+        const [spi, atc, linkser] = await Promise.all([
           metricsService.getSPIMetrics(),
           metricsService.getATCMetrics(),
+          metricsService.getLinkserMetrics(),
         ]);
 
         if (!active) {
@@ -67,12 +69,13 @@ export function Dashboard() {
 
         setSpiMetrics(spi);
         setAtcMetrics(atc);
+        setLinkserMetrics(linkser);
       } catch (error) {
         if (!active) {
           return;
         }
 
-        console.error('Error fetching SPI/ATC metrics:', error);
+        console.error('Error fetching SPI/ATC/Linkser metrics:', error);
       } finally {
         if (active) {
           setNationalSystemsLoading(false);
@@ -153,6 +156,25 @@ export function Dashboard() {
       ) : null;
     }
 
+    if (server.type === 'linkser') {
+      return linkserMetrics ? (
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div>
+            <div className="text-gray-500">TPS</div>
+            <div className="font-medium">{linkserMetrics.transactionsPerSecond.toFixed(2)}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">Debit</div>
+            <div className="font-medium">{Math.round(linkserMetrics.activeDebitCards).toLocaleString()}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">Credit</div>
+            <div className="font-medium">{Math.round(linkserMetrics.activeCreditCards).toLocaleString()}</div>
+          </div>
+        </div>
+      ) : null;
+    }
+
     if (!serverMetric) {
       return null;
     }
@@ -188,6 +210,9 @@ export function Dashboard() {
             });
             void metricsService.getATCMetrics().then(setAtcMetrics).catch((error) => {
               console.error('Error refreshing ATC metrics:', error);
+            });
+            void metricsService.getLinkserMetrics().then(setLinkserMetrics).catch((error) => {
+              console.error('Error refreshing Linkser metrics:', error);
             });
           }}
           disabled={metricsLoading}
@@ -402,7 +427,7 @@ export function Dashboard() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-medium text-gray-700">SPI Metrics</h3>
@@ -461,6 +486,43 @@ export function Dashboard() {
               ) : (
                 <div className="text-center py-8 text-gray-500">
                   <p className="text-sm">ATC metrics unavailable</p>
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium text-gray-700">Linkser Metrics</h3>
+                <span className={`text-xs px-2 py-1 rounded-full ${linkserMetrics?.serviceUp === 1 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  {linkserMetrics?.serviceUp === 1 ? 'UP' : 'DOWN'}
+                </span>
+              </div>
+              {nationalSystemsLoading && !linkserMetrics ? (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[#3b82f6]"></div>
+                </div>
+              ) : linkserMetrics ? (
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <div className="text-gray-500 mb-1">Transactions/sec</div>
+                    <div className="text-2xl font-medium text-gray-800">{linkserMetrics.transactionsPerSecond.toFixed(2)}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <div className="text-gray-500 mb-1">Authorization Rate</div>
+                    <div className="text-2xl font-medium text-gray-800">{(linkserMetrics.authorizationRate * 100).toFixed(2)}%</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <div className="text-gray-500 mb-1">Active Debit Cards</div>
+                    <div className="text-2xl font-medium text-gray-800">{Math.round(linkserMetrics.activeDebitCards).toLocaleString()}</div>
+                  </div>
+                  <div className="rounded-lg bg-slate-50 p-4">
+                    <div className="text-gray-500 mb-1">Active Credit Cards</div>
+                    <div className="text-2xl font-medium text-gray-800">{Math.round(linkserMetrics.activeCreditCards).toLocaleString()}</div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <p className="text-sm">Linkser metrics unavailable</p>
                 </div>
               )}
             </div>

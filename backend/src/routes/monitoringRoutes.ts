@@ -241,6 +241,39 @@ router.get('/atc', metricsController.getATCMetrics);
 
 /**
  * @swagger
+ * /api/metrics/linkser:
+ *   get:
+ *     summary: Get Linkser metrics
+ *     description: Returns near real-time operational metrics for the Linkser debit and credit card service.
+ *     tags: [Metrics]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Linkser metrics retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   $ref: '#/components/schemas/LinkserMetrics'
+ *                 meta:
+ *                   type: object
+ *                   properties:
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *                     system:
+ *                       type: string
+ *                       example: LINKSER
+ */
+router.get('/linkser', metricsController.getLinkserMetrics);
+
+/**
+ * @swagger
  * /api/metrics/prometheus:
  *   get:
  *     summary: Get Prometheus metrics
