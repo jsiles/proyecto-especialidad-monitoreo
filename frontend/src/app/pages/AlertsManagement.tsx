@@ -5,8 +5,8 @@ import { Input } from "../components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
 import { useAlerts } from "../../hooks/useAlerts";
 import { useServers } from "../../hooks/useServers";
-import { format } from "date-fns";
 import { getErrorMessage } from "../../services/api";
+import { formatLaPazMonthDayTime } from "../../utils/dateTime";
 
 export function AlertsManagement() {
   const { 
@@ -205,7 +205,7 @@ export function AlertsManagement() {
                             <span>Server: {alert.server_name || alert.server_id}</span>
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {format(new Date(alert.created_at), 'MMM dd, HH:mm:ss')}
+                              {formatLaPazMonthDayTime(alert.created_at, true)}
                             </span>
                           </div>
                         </div>
@@ -275,7 +275,7 @@ export function AlertsManagement() {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-500">
-                              {format(new Date(alert.created_at), 'MMM dd, HH:mm')}
+                              {formatLaPazMonthDayTime(alert.created_at)}
                             </td>
                             <td className="px-6 py-4 text-sm">
                               {alert.resolved ? (

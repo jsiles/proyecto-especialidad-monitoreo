@@ -5,7 +5,7 @@ import { useMetrics } from "../../hooks/useMetrics";
 import { useAlerts } from "../../hooks/useAlerts";
 import { useServers } from "../../hooks/useServers";
 import metricsService, { type ATCMetrics, type LinkserMetrics, type SPIMetrics } from "../../services/metricsService";
-import { format } from "date-fns";
+import { formatLaPazTime } from "../../utils/dateTime";
 
 const grafanaBaseUrl = (import.meta.env.VITE_GRAFANA_URL || "/grafana").replace(/\/$/, "");
 const GRAFANA_DASHBOARD_URL = `${grafanaBaseUrl}/d/main-monitoring?orgId=1&from=now-1h&to=now&theme=light&kiosk`;
@@ -42,7 +42,7 @@ export function Dashboard() {
   useEffect(() => {
     if (metrics.length > 0) {
       const chartData = metrics.slice(-20).map((m) => ({
-        name: format(new Date(m.timestamp), 'HH:mm'),
+        name: formatLaPazTime(m.timestamp),
         cpu: Math.round(m.cpu),
         memory: Math.round(m.memory),
         disk: Math.round(m.disk),
@@ -406,7 +406,7 @@ export function Dashboard() {
                             {alert.message}
                           </div>
                           <div className="text-xs text-gray-500">
-                            {format(new Date(alert.created_at), 'HH:mm:ss')}
+                            {formatLaPazTime(alert.created_at, true)}
                           </div>
                         </div>
                       </div>

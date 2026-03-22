@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../database/connection';
 import { Alert, AlertWithDetails, CreateAlertInput, AlertSeverity } from '../models/Alert';
+import { formatLaPazSqlTimestamp } from '../utils/dateTime';
 import { logger } from '../utils/logger';
 
 export class AlertRepository {
@@ -190,7 +191,7 @@ export class AlertRepository {
   public create(input: CreateAlertInput): Alert {
     const db = getDatabase();
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = formatLaPazSqlTimestamp(new Date());
 
     db.prepare(`
       INSERT INTO alerts (id, server_id, threshold_id, message, severity, created_at)
@@ -213,7 +214,7 @@ export class AlertRepository {
    */
   public acknowledge(id: string, acknowledgedBy: string): Alert | null {
     const db = getDatabase();
-    const now = new Date().toISOString();
+    const now = formatLaPazSqlTimestamp(new Date());
 
     const result = db.prepare(`
       UPDATE alerts 
@@ -232,7 +233,7 @@ export class AlertRepository {
    */
   public resolve(id: string): Alert | null {
     const db = getDatabase();
-    const now = new Date().toISOString();
+    const now = formatLaPazSqlTimestamp(new Date());
 
     const result = db.prepare(`
       UPDATE alerts 

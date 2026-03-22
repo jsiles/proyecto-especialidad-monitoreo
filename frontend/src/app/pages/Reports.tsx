@@ -4,8 +4,12 @@ import { Input } from "../components/ui/input";
 import { Calendar, Download, RefreshCw, FileText, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
 import { reportsService, type Report, type GenerateReportData } from "../../services/reportsService";
 import { useServers } from "../../hooks/useServers";
-import { format } from "date-fns";
 import { getErrorMessage } from "../../services/api";
+import {
+  formatLaPazShortDate,
+  formatLaPazShortDateTime,
+  getLaPazDateInputValue,
+} from "../../utils/dateTime";
 
 export function Reports() {
   const { servers } = useServers(true);
@@ -16,13 +20,11 @@ export function Reports() {
   const [success, setSuccess] = useState("");
 
   const [fromDate, setFromDate] = useState(() => {
-    const date = new Date();
-    date.setDate(date.getDate() - 7); // Default: last 7 days
-    return date.toISOString().split('T')[0];
+    return getLaPazDateInputValue(-7);
   });
   
   const [toDate, setToDate] = useState(() => {
-    return new Date().toISOString().split('T')[0];
+    return getLaPazDateInputValue();
   });
 
   const [reportType, setReportType] = useState<"daily" | "weekly" | "monthly" | "asfi">("weekly");
@@ -337,18 +339,18 @@ export function Reports() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {report.from_date && report.to_date ? (
                           <>
-                            {format(new Date(report.from_date), 'MMM dd, yyyy')} - {format(new Date(report.to_date), 'MMM dd, yyyy')}
+                            {formatLaPazShortDate(report.from_date)} - {formatLaPazShortDate(report.to_date)}
                           </>
                         ) : report.period_start && report.period_end ? (
                           <>
-                            {format(new Date(report.period_start), 'MMM dd, yyyy')} - {format(new Date(report.period_end), 'MMM dd, yyyy')}
+                            {formatLaPazShortDate(report.period_start)} - {formatLaPazShortDate(report.period_end)}
                           </>
                         ) : (
                           'N/A'
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {format(new Date(report.created_at), 'MMM dd, yyyy HH:mm')}
+                        {formatLaPazShortDateTime(report.created_at)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         {report.file_path ? report.file_path.split('/').pop() : 'N/A'}

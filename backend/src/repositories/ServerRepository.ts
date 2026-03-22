@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../database/connection';
 import { Server, CreateServerInput, UpdateServerInput, ServerStatus } from '../models/Server';
+import { formatLaPazSqlTimestamp } from '../utils/dateTime';
 import { logger } from '../utils/logger';
 
 export class ServerRepository {
@@ -115,7 +116,7 @@ export class ServerRepository {
   public create(input: CreateServerInput): Server {
     const db = getDatabase();
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = formatLaPazSqlTimestamp(new Date());
 
     db.prepare(`
       INSERT INTO servers (id, name, ip_address, type, environment, status, created_at, updated_at)
@@ -172,7 +173,7 @@ export class ServerRepository {
 
     if (updates.length > 0) {
       updates.push('updated_at = ?');
-      values.push(new Date().toISOString());
+      values.push(formatLaPazSqlTimestamp(new Date()));
       values.push(id);
 
       db.prepare(`UPDATE servers SET ${updates.join(', ')} WHERE id = ?`).run(...values);
@@ -189,7 +190,7 @@ export class ServerRepository {
     const db = getDatabase();
     const result = db.prepare(`
       UPDATE servers SET status = ?, updated_at = ? WHERE id = ?
-    `).run(status, new Date().toISOString(), id);
+    `).run(status, formatLaPazSqlTimestamp(new Date()), id);
     return result.changes > 0;
   }
 

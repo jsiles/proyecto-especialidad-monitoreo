@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../database/connection';
 import { Report, ReportType, ReportStatus } from '../models/Report';
+import { formatLaPazSqlTimestamp } from '../utils/dateTime';
 
 export interface ReportQueryOptions {
   type?: ReportType;
@@ -103,7 +104,7 @@ export class ReportRepository {
   }): Report {
     const db = getDatabase();
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = formatLaPazSqlTimestamp(new Date());
 
     const stmt = db.prepare(`
       INSERT INTO reports (id, type, period_start, period_end, generated_by, status, file_path, file_size, created_at)
@@ -163,7 +164,7 @@ export class ReportRepository {
 
     if (data.status === 'completed') {
       updates.push('completed_at = ?');
-      params.push(new Date().toISOString());
+      params.push(formatLaPazSqlTimestamp(new Date()));
     }
 
     if (updates.length === 0) return this.findById(id);
@@ -222,11 +223,15 @@ export class ReportRepository {
     });
 
     // Recent (last 7 days)
+    const recentCutoff = new Date();
+    recentCutoff.setDate(recentCutoff.getDate() - 7);
     const recentStmt = db.prepare(`
       SELECT COUNT(*) as count FROM reports 
-      WHERE created_at >= datetime('now', '-7 days')
+      WHERE created_at >= ?
     `);
-    const { count: recent_count } = recentStmt.get() as { count: number };
+    const { count: recent_count } = recentStmt.get(
+      formatLaPazSqlTimestamp(recentCutoff)
+    ) as { count: number };
 
     return { total, by_type, by_status, recent_count };
   }

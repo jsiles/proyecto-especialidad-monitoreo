@@ -18,6 +18,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     environment:
+      - TZ=America/La_Paz
       - VITE_API_URL=http://localhost:3000/api
       - VITE_WS_URL=ws://localhost:3000/ws
     depends_on:
@@ -40,6 +41,7 @@ services:
     environment:
       - NODE_ENV=development
       - PORT=3000
+      - TZ=America/La_Paz
       - DATABASE_PATH=/app/data/monitoring.db
       - JWT_SECRET=dev-secret-change-in-production
       - JWT_EXPIRATION=24h
@@ -66,6 +68,8 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--storage.tsdb.retention.time=7d'
       - '--web.enable-lifecycle'
+    environment:
+      - TZ=America/La_Paz
     networks:
       - monitoring-network
 
@@ -76,6 +80,7 @@ services:
     ports:
       - "3001:3000"
     environment:
+      - TZ=America/La_Paz
       - GF_SECURITY_ADMIN_USER=admin
       - GF_SECURITY_ADMIN_PASSWORD=admin
       - GF_SECURITY_ALLOW_EMBEDDING=true
@@ -96,6 +101,8 @@ services:
     build:
       context: ./mock-exporters/spi-exporter
       dockerfile: Dockerfile
+    environment:
+      - TZ=America/La_Paz
     container_name: monitoring-spi-exporter-dev
     ports:
       - "9101:9100"
@@ -106,6 +113,8 @@ services:
     build:
       context: ./mock-exporters/atc-exporter
       dockerfile: Dockerfile
+    environment:
+      - TZ=America/La_Paz
     container_name: monitoring-atc-exporter-dev
     ports:
       - "9102:9100"
@@ -116,6 +125,8 @@ services:
     build:
       context: ./mock-exporters/linkser-exporter
       dockerfile: Dockerfile
+    environment:
+      - TZ=America/La_Paz
     container_name: monitoring-linkser-exporter-dev
     ports:
       - "9104:9100"
@@ -126,6 +137,8 @@ services:
     build:
       context: ./mock-exporters/server-exporter
       dockerfile: Dockerfile
+    environment:
+      - TZ=America/La_Paz
     container_name: monitoring-server-exporter-dev
     ports:
       - "9103:9100"

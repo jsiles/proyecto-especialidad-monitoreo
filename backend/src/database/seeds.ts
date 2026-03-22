@@ -7,6 +7,7 @@ import { getDatabase } from './connection';
 import { hashPassword } from '../utils/passwordHasher';
 import { logger } from '../utils/logger';
 import { v4 as uuidv4 } from 'uuid';
+import { formatLaPazSqlTimestamp } from '../utils/dateTime';
 
 /**
  * Seed default users
@@ -26,7 +27,7 @@ export async function seedUsers(): Promise<void> {
 
   const adminId = uuidv4();
   const operatorId = uuidv4();
-  const now = new Date().toISOString();
+  const now = formatLaPazSqlTimestamp(new Date());
 
   // Create admin user
   db.prepare(`
@@ -53,7 +54,7 @@ export async function seedUsers(): Promise<void> {
 export function seedServers(): void {
   const db = getDatabase();
 
-  const now = new Date().toISOString();
+  const now = formatLaPazSqlTimestamp(new Date());
   const servers = [
     { name: 'srv-app-01', ip_address: '192.168.1.10', type: 'application', environment: 'production' },
     { name: 'srv-app-02', ip_address: '192.168.1.11', type: 'application', environment: 'production' },
@@ -66,8 +67,8 @@ export function seedServers(): void {
   ];
 
   const stmt = db.prepare(`
-    INSERT INTO servers (id, name, ip_address, type, environment, status, created_at)
-    VALUES (?, ?, ?, ?, ?, 'unknown', ?)
+    INSERT INTO servers (id, name, ip_address, type, environment, status, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, 'unknown', ?, ?)
   `);
   const existingServerNames = new Set(
     (
@@ -82,7 +83,7 @@ export function seedServers(): void {
     }
 
     const id = uuidv4();
-    stmt.run(id, server.name, server.ip_address, server.type, server.environment, now);
+    stmt.run(id, server.name, server.ip_address, server.type, server.environment, now, now);
     insertedCount += 1;
   }
 
@@ -107,7 +108,7 @@ export function seedThresholds(): void {
     return;
   }
 
-  const now = new Date().toISOString();
+  const now = formatLaPazSqlTimestamp(new Date());
   
   // Global thresholds (server_id = NULL)
   const thresholds = [

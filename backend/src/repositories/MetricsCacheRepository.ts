@@ -10,6 +10,7 @@ import {
   MetricsCacheEntry,
   MetricsCacheMetricType,
 } from '../models/MetricsCache';
+import { formatLaPazSqlTimestamp } from '../utils/dateTime';
 import { logger } from '../utils/logger';
 
 const METRIC_TYPES: MetricsCacheMetricType[] = [
@@ -27,18 +28,19 @@ export class MetricsCacheRepository {
    */
   public createSnapshot(input: CreateMetricsSnapshotInput): MetricsCacheEntry[] {
     const db = getDatabase();
+    const persistedTimestamp = formatLaPazSqlTimestamp(input.timestamp);
     const insertMetric = db.prepare(`
       INSERT INTO metrics_cache (id, server_id, metric_type, value, timestamp)
       VALUES (?, ?, ?, ?, ?)
     `);
 
     const entries = METRIC_TYPES.map((metricType) => ({
-      id: uuidv4(),
-      server_id: input.server_id,
-      metric_type: metricType,
-      value: input.metrics[metricType] ?? 0,
-      timestamp: input.timestamp,
-    }));
+        id: uuidv4(),
+        server_id: input.server_id,
+        metric_type: metricType,
+        value: input.metrics[metricType] ?? 0,
+        timestamp: persistedTimestamp,
+      }));
 
     const transaction = db.transaction((snapshotEntries: MetricsCacheEntry[]) => {
       for (const entry of snapshotEntries) {
@@ -56,7 +58,7 @@ export class MetricsCacheRepository {
 
     logger.debug('Metrics snapshot persisted', {
       serverId: input.server_id,
-      timestamp: input.timestamp,
+      timestamp: persistedTimestamp,
       metricsStored: entries.length,
     });
 

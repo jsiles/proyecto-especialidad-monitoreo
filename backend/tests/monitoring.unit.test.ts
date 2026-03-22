@@ -174,11 +174,11 @@ describe('MonitoringService (unit, axios mocked)', () => {
     const metrics = await monitoringService.getServerMetrics(createdServerId);
     const db = getDatabase();
     const rows = db.prepare(`
-      SELECT metric_type, value
+      SELECT metric_type, value, timestamp
       FROM metrics_cache
       WHERE server_id = ?
       ORDER BY metric_type ASC
-    `).all(createdServerId) as Array<{ metric_type: string; value: number }>;
+    `).all(createdServerId) as Array<{ metric_type: string; value: number; timestamp: string }>;
 
     expect(metrics.status).toBe('online');
     expect(rows).toHaveLength(6);
@@ -190,6 +190,7 @@ describe('MonitoringService (unit, axios mocked)', () => {
         expect.objectContaining({ metric_type: 'uptime', value: 3600 }),
       ])
     );
+    expect(rows[0]?.timestamp).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/);
   });
 
   it('getServerMetrics: updates server status when calculated status changes', async () => {

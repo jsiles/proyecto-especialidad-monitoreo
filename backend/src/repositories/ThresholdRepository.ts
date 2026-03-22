@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../database/connection';
 import { AlertThreshold, ThresholdWithServer, CreateThresholdInput, UpdateThresholdInput, MetricType } from '../models/AlertThreshold';
+import { formatLaPazSqlTimestamp } from '../utils/dateTime';
 import { logger } from '../utils/logger';
 
 export class ThresholdRepository {
@@ -134,7 +135,7 @@ export class ThresholdRepository {
   public create(input: CreateThresholdInput): AlertThreshold {
     const db = getDatabase();
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = formatLaPazSqlTimestamp(new Date());
 
     db.prepare(`
       INSERT INTO alert_thresholds (id, server_id, metric_type, threshold_value, severity, enabled, created_at)

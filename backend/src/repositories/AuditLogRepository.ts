@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../database/connection';
 import { AuditLog, AuditLogWithUser, CreateAuditLogInput, AuditLogQueryOptions } from '../models/AuditLog';
+import { formatLaPazSqlTimestamp } from '../utils/dateTime';
 import { logger } from '../utils/logger';
 
 export class AuditLogRepository {
@@ -74,7 +75,7 @@ export class AuditLogRepository {
   public create(input: CreateAuditLogInput): AuditLog {
     const db = getDatabase();
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = formatLaPazSqlTimestamp(new Date());
 
     const details = input.details ? JSON.stringify(input.details) : null;
 
@@ -137,7 +138,9 @@ export class AuditLogRepository {
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
     
-    const result = db.prepare('DELETE FROM audit_logs WHERE timestamp < ?').run(cutoffDate.toISOString());
+    const result = db.prepare('DELETE FROM audit_logs WHERE timestamp < ?').run(
+      formatLaPazSqlTimestamp(cutoffDate)
+    );
     
     if (result.changes > 0) {
       logger.info('Cleaned old audit logs', { deletedCount: result.changes, daysToKeep });

@@ -6,6 +6,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '../database/connection';
 import { User, UserWithRoles, Role, CreateUserInput, UpdateUserInput, SafeUser } from '../models/User';
+import { formatLaPazSqlTimestamp } from '../utils/dateTime';
 import { logger } from '../utils/logger';
 
 export class UserRepository {
@@ -73,7 +74,7 @@ export class UserRepository {
   public create(input: CreateUserInput & { password_hash: string }): User {
     const db = getDatabase();
     const id = uuidv4();
-    const now = new Date().toISOString();
+    const now = formatLaPazSqlTimestamp(new Date());
 
     db.prepare(`
       INSERT INTO users (id, username, password_hash, email, created_at)
@@ -141,7 +142,7 @@ export class UserRepository {
    */
   public updateLastLogin(id: string): void {
     const db = getDatabase();
-    db.prepare('UPDATE users SET last_login = ? WHERE id = ?').run(new Date().toISOString(), id);
+    db.prepare('UPDATE users SET last_login = ? WHERE id = ?').run(formatLaPazSqlTimestamp(new Date()), id);
   }
 
   /**

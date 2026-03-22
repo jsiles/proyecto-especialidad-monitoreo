@@ -18,6 +18,7 @@ import { logger } from '../utils/logger';
 
 // Ensure reports directory exists
 const REPORTS_DIR = process.env.REPORTS_DIR || './data/reports';
+const REPORT_TIME_ZONE = 'America/La_Paz';
 if (!fs.existsSync(REPORTS_DIR)) {
   fs.mkdirSync(REPORTS_DIR, { recursive: true });
 }
@@ -201,7 +202,9 @@ export class ReportService {
               y = 50;
             }
             
-            const date = new Date(alert.created_at).toLocaleDateString('es-BO');
+            const date = new Date(alert.created_at).toLocaleDateString('es-BO', {
+              timeZone: REPORT_TIME_ZONE,
+            });
             doc.text(date, tableLeft, y, { width: 75 });
             doc.text(alert.server_name || 'N/A', tableLeft + 80, y, { width: 95 });
             doc.text(alert.severity.toUpperCase(), tableLeft + 180, y, { width: 75 });
@@ -539,8 +542,8 @@ export class ReportService {
   private addPeriod(doc: PDFKit.PDFDocument, from: string, to: string): void {
     doc.fontSize(10).font('Helvetica');
     doc.moveDown(0.5);
-    doc.text(`Período: ${new Date(from).toLocaleDateString('es-BO')} - ${new Date(to).toLocaleDateString('es-BO')}`, { align: 'center' });
-    doc.text(`Generado: ${new Date().toLocaleString('es-BO')}`, { align: 'center' });
+    doc.text(`Período: ${new Date(from).toLocaleDateString('es-BO', { timeZone: REPORT_TIME_ZONE })} - ${new Date(to).toLocaleDateString('es-BO', { timeZone: REPORT_TIME_ZONE })}`, { align: 'center' });
+    doc.text(`Generado: ${new Date().toLocaleString('es-BO', { timeZone: REPORT_TIME_ZONE })}`, { align: 'center' });
   }
 
   private addSectionTitle(doc: PDFKit.PDFDocument, title: string): void {
