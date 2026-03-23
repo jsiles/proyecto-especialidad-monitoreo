@@ -414,7 +414,7 @@ Tablas principales:
 - `/alerts`
 - `/reports`
 
-## Comandos utiles para ejecutar consultas desde un contenedo sqlite
+## Comandos utiles para ejecutar consultas desde un contenedor sqlite temporal
 ```bash
 docker run --rm -it   --volumes-from monitoring-backend   keinos/sqlite3   sqlite3 /app/data/monitoring.db "SELECT * FROM alert_thresholds ORDER BY created_at DESC LIMIT 10;"
 
