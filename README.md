@@ -414,12 +414,13 @@ Tablas principales:
 - `/alerts`
 - `/reports`
 
-## Archivos de referencia utiles
+## Comandos utiles para ejecutar consultas desde un contenedo sqlite
 
-- `CHECKLIST_PRUEBAS.md`
-- `GUIA_RAPIDA_TESTING.md`
-- `FASE_5_COMPLETADA.md`
-- `monitoring-platform-api.json`
+docker run --rm -it   --volumes-from monitoring-backend   keinos/sqlite3   sqlite3 /app/data/monitoring.db "SELECT * FROM alert_thresholds ORDER BY created_at DESC LIMIT 10;"
+
+docker run --rm -it   --volumes-from monitoring-backend   keinos/sqlite3   sqlite3 /app/data/monitoring.db "SELECT * FROM metrics_cache ORDER BY timestamp DESC LIMIT 10;"
+
+
 
 ## Licencia
 
