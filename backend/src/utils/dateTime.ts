@@ -3,7 +3,19 @@ const LA_PAZ_TIME_ZONE = 'America/La_Paz';
 type DateInput = string | number | Date;
 
 function toDate(value: DateInput): Date {
-  return value instanceof Date ? value : new Date(value);
+  // If no value provided, use current time
+  if (value === undefined || value === null || value === '') {
+    return new Date();
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+
+  // If parsing failed, fallback to current time instead of letting Intl throw
+  if (isNaN(date.getTime())) {
+    return new Date();
+  }
+
+  return date;
 }
 
 export function formatLaPazSqlTimestamp(value: DateInput): string {
