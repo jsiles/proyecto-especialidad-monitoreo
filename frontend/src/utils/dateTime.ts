@@ -4,17 +4,43 @@ const UI_LOCALE = 'en-US';
 type DateInput = string | number | Date;
 
 function toDate(value: DateInput): Date {
-  return value instanceof Date ? value : new Date(value);
+  // Treat null/undefined/empty as "now" to avoid Invalid Date errors
+  if (value === undefined || value === null || value === '') {
+    return new Date();
+  }
+
+  const date = value instanceof Date ? value : new Date(value);
+  // If parsing failed, fallback to current date instead of throwing
+  if (isNaN(date.getTime())) {
+    return new Date();
+  }
+  return date;
 }
 
 function formatWithParts(
   value: DateInput,
   options: Intl.DateTimeFormatOptions
 ): string {
-  return new Intl.DateTimeFormat(UI_LOCALE, {
-    timeZone: LA_PAZ_TIME_ZONE,
-    ...options,
-  }).format(toDate(value));
+  const date = toDate(value);
+  try {
+    return new Intl.DateTimeFormat(UI_LOCALE, {
+      timeZone: LA_PAZ_TIME_ZONE,
+      ...options,
+    }).format(date);
+  } catch (err) {
+    // Fallback: return ISO string (safe) to avoid crashing the app
+    // Intl may throw if the environment lacks the timezone or date is invalid
+    // Log a warning for debugging
+    // eslint-disable-next-line no-console
+    console.warn('Date formatting failed, falling back to ISO string', { value, error: err });
+    return toISOStringSafe(date);
+  }
+}
+
+// Return an ISO string safely, falling back to now if invalid
+export function toISOStringSafe(value: DateInput): string {
+  const d = toDate(value);
+  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
 }
 
 export function formatLaPazTime(value: DateInput, includeSeconds = false): string {

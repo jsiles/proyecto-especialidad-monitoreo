@@ -11,6 +11,7 @@ import alertsService, {
 } from '../services/alertsService';
 import type { RealtimeAlertEvent } from './useWebSocket';
 import { getErrorMessage } from '../services/api';
+import { toISOStringSafe } from '../utils/dateTime';
 
 interface UseAlertsReturn {
   alerts: Alert[];
@@ -206,7 +207,7 @@ export function useAlerts(
         server_name: customEvent.detail.serverName,
         severity: customEvent.detail.type,
         acknowledged: customEvent.detail.acknowledged,
-        created_at: new Date(customEvent.detail.timestamp).toISOString(),
+        created_at: toISOStringSafe(customEvent.detail.timestamp as any),
         id: customEvent.detail.id,
         message: customEvent.detail.message,
         resolved: false,
@@ -222,12 +223,12 @@ export function useAlerts(
       setAlerts((prev) => prev.map((alert) => alert.id === customEvent.detail.alertId ? {
         ...alert,
         acknowledged: true,
-        acknowledged_at: new Date(customEvent.detail.timestamp).toISOString(),
+        acknowledged_at: toISOStringSafe(customEvent.detail.timestamp as any),
       } : alert));
       setActiveAlerts((prev) => prev.map((alert) => alert.id === customEvent.detail.alertId ? {
         ...alert,
         acknowledged: true,
-        acknowledged_at: new Date(customEvent.detail.timestamp).toISOString(),
+        acknowledged_at: toISOStringSafe(customEvent.detail.timestamp as any),
       } : alert));
     };
 
@@ -236,7 +237,7 @@ export function useAlerts(
       setAlerts((prev) => prev.map((alert) => alert.id === customEvent.detail.alertId ? {
         ...alert,
         resolved: true,
-        resolved_at: new Date(customEvent.detail.resolvedAt).toISOString(),
+        resolved_at: toISOStringSafe(customEvent.detail.resolvedAt as any),
       } : alert));
       setActiveAlerts((prev) => prev.filter((alert) => alert.id !== customEvent.detail.alertId));
     };
