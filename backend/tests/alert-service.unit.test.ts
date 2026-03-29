@@ -15,6 +15,7 @@ jest.mock('../src/repositories/AlertRepository', () => ({
     acknowledge: jest.fn(),
     resolve: jest.fn(),
     getStatistics: jest.fn(),
+    countAll: jest.fn(),
   },
 }));
 
@@ -111,6 +112,8 @@ describe('AlertService (unit)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     service = new AlertService();
+    // Setup default return values
+    mockAlertRepo.countAll.mockReturnValue(0);
   });
 
   // ─── getAlerts ───────────────────────────────────────────────────────────
@@ -118,6 +121,7 @@ describe('AlertService (unit)', () => {
   describe('getAlerts', () => {
     it('returns alerts and total', () => {
       mockAlertRepo.findAll.mockReturnValue([makeAlertWithDetails()] as any);
+      mockAlertRepo.countAll.mockReturnValue(1);
 
       const result = service.getAlerts();
 
@@ -127,6 +131,7 @@ describe('AlertService (unit)', () => {
 
     it('returns empty when no alerts', () => {
       mockAlertRepo.findAll.mockReturnValue([]);
+      mockAlertRepo.countAll.mockReturnValue(0);
 
       const result = service.getAlerts();
 
@@ -135,6 +140,7 @@ describe('AlertService (unit)', () => {
 
     it('passes query filters to repository', () => {
       mockAlertRepo.findAll.mockReturnValue([]);
+      mockAlertRepo.countAll.mockReturnValue(0);
 
       service.getAlerts({ severity: 'critical', resolved: false, limit: 10, offset: 5 } as any);
 
