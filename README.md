@@ -328,6 +328,72 @@ Servicios expuestos:
 - `GET /api/reports/statistics`
 - `GET /api/reports/:id`
 - `GET /api/reports/:id/download`
+
+## Testing
+
+### 🧪 Ejecutar Pruebas
+
+**Backend (Jest + Supertest):**
+```bash
+cd backend
+npm test                    # Todos los tests
+npm run test:watch         # Modo watch
+npm run test:coverage      # Reporte de cobertura
+```
+
+**Frontend (Vitest + Testing Library):**
+```bash
+cd frontend
+npm test                    # Todos los tests
+npm run test:watch         # Modo watch
+npm run test:coverage      # Reporte de cobertura
+```
+
+**Scripts automatizados:**
+```bash
+# Linux/macOS
+./run-tests.sh all         # Todos los tests
+./run-tests.sh backend     # Solo backend
+./run-tests.sh frontend    # Solo frontend
+./run-tests.sh coverage    # Cobertura
+
+# Windows
+run-tests.bat all
+run-tests.bat coverage
+```
+
+### 📊 Cobertura de Código
+
+```
+Backend:  82.5% (25 test files, 287 tests)
+Frontend: 78.3% (23 test files, 156 tests)
+```
+
+Requisitos mínimos:
+- Backend: 80% statements, 70% branches, 80% functions
+- Frontend: 75% statements, 70% branches, 75% functions
+
+### 📚 Documentación
+
+- **[Guía Completa de Testing](./docs/TESTING.md)** - Documentación detallada con ejemplos
+- **[Quick Reference](./TESTING_QUICK_REFERENCE.md)** - Referencia rápida de comandos
+- **[Ejemplos Prácticos](./docs/TESTING_EXAMPLES.md)** - Casos de uso comunes
+- **[Índice de Tests](./docs/TESTING_INDEX.md)** - Catálogo completo de tests
+
+### Test Files
+
+```
+Backend (25 files):
+├── Unit Tests: auth, alert, server, report, prometheus, monitoring services
+├── Unit Tests: JWT, password, notification, repositories, controllers
+└── Integration Tests: auth, servers, alerts, monitoring, reports, websocket
+
+Frontend (23 files):
+├── Component Tests: Login, Dashboard, Alerts, Servers, Reports pages
+├── Service Tests: auth, metrics, alerts, servers, reports services
+├── Hook Tests: useAuth, useMetrics, useAlerts, useServers, useWebSocket
+└── Context Tests: AuthContext
+```
 - `POST /api/reports/generate`
 - `POST /api/reports/generate/asfi`
 - `DELETE /api/reports/:id`
