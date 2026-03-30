@@ -245,7 +245,7 @@ npm run dev
 
 Disponible en:
 
-- App: `http://localhost:5173`
+- App: `http://localhost`
 
 ## Ejecucion con Docker
 
@@ -257,7 +257,7 @@ docker compose -f docker-compose.dev.yml up --build
 
 Servicios expuestos:
 
-- Frontend dev: `http://localhost:5173`
+- Frontend dev: `http://localhost`
 - Backend: `http://localhost:3000`
 - Prometheus: `http://localhost:9090`
 - Grafana: `http://localhost:3001`
