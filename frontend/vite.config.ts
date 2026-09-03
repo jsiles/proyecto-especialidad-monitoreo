@@ -1,9 +1,14 @@
 import { defineConfig } from 'vitest/config'
+import { loadEnv } from 'vite'
 import path from 'path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '')
+  const apiUrl = env.VITE_API_URL || 'http://backend:3000/api'
+
+  return {
   plugins: [
     // The React and Tailwind plugins are both required for Make, even if
     // Tailwind is not being actively used – do not remove them
@@ -26,18 +31,18 @@ export default defineConfig({
     host: '0.0.0.0',
     proxy: {
       '/api': {
-        target: process.env.VITE_API_URL || 'http://backend:3000',
+        target: new URL(apiUrl).origin,
         changeOrigin: true,
         secure: false,
         rewrite: (path) => path.replace(/^\/api/, '/api'),
       },
       '/ws': {
-        target: process.env.VITE_WS_URL || 'ws://backend:3000',
+        target: env.VITE_WS_URL || 'ws://backend:3000',
         ws: true,
         changeOrigin: true,
       },
       '/grafana': {
-        target: process.env.VITE_GRAFANA_PROXY_TARGET || 'http://localhost:3001',
+        target: env.VITE_GRAFANA_PROXY_TARGET || 'http://127.0.0.1:3001',
         changeOrigin: true,
         secure: false,
       },
@@ -70,4 +75,5 @@ export default defineConfig({
       ],
     },
   },
+  }
 })

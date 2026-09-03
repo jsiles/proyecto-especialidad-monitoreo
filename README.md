@@ -212,7 +212,7 @@ Esto permite probar alertas criticas sin un servidor SMTP real.
 
 ## Ejecucion local
 
-### 1. Preparar variables de entorno
+### 1. Preparar variables de entorno backend, copiar tanto en el backend, frontend y raiz para el uso de cada proyecto, de ejemplo esta en.example.
 
 PowerShell:
 
